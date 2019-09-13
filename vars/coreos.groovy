@@ -13,7 +13,7 @@ def pod(params, body) {
         // Backwards compat, see https://github.com/projectatomic/rpm-ostree/pull/1899/commits/9c1709c363e94760f0e9461719b92a7a4aca6c63#r323256575
         params['runAsUser'] = 0
     }
-    if (params['runAsUser']) {
+    if (params['runAsUser'] != null) {
         // XXX: tmp hack to get anyuid SCC; need to ask to get jenkins SA added
         podObj['spec']['serviceAccountName'] = "papr"
         podObj['spec']['containers'][1]['securityContext'] = [runAsUser: params['runAsUser']]

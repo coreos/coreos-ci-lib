@@ -4,6 +4,7 @@
 //   kvm: bool
 //   runAsUser: int
 //   privileged: bool (deprecated, equivalent to `runAsUser: 0`)
+//   memory: amount of RAM to request
 def pod(params, body) {
     def podJSON = libraryResource 'com/github/coreos/pod.json'
     def podObj = readJSON text: podJSON
@@ -21,6 +22,10 @@ def pod(params, body) {
 
     if (params['kvm']) {
         podObj['spec']['nodeSelector'] = [oci_kvm_hook: "allowed"]
+    }
+
+    if (params['memory']) {
+        podObj['spec']['containers'][1]['resources'] = [requests: [memory: params['memory']]]
     }
 
     // XXX: look into converting to a YAML string instead

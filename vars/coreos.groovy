@@ -6,6 +6,7 @@
 //   privileged: bool (deprecated, equivalent to `runAsUser: 0`)
 //   memory: amount of RAM to request
 //   cpu: amount of CPU to request
+//   emptyDirs: []string
 def pod(params, body) {
     def podJSON = libraryResource 'com/github/coreos/pod.json'
     def podObj = readJSON text: podJSON
@@ -31,6 +32,14 @@ def pod(params, body) {
     }
     if (params['cpu']) {
         podObj['spec']['containers'][1]['resources']['requests']['cpu'] = params['cpu'].toString()
+    }
+    if (params['emptyDirs']) {
+        podObj['spec']['volumes'] = []
+        podObj['spec']['containers'][1]['volumeMounts'] = []
+        params['emptyDirs'].eachWithIndex { mountPath, i ->
+            podObj['spec']['volumes'] += ['name': "emptydir-${i}".toString(), 'emptyDir': [:]]
+            podObj['spec']['containers'][1]['volumeMounts'] += ['name': "emptydir-${i}".toString(), 'mountPath': mountPath]
+        }
     }
 
     // XXX: look into converting to a YAML string instead

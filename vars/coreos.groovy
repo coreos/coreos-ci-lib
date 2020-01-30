@@ -50,7 +50,7 @@ def pod(params, body) {
         podYAML = readFile(file: "${label}.yaml")
     }
 
-    podTemplate(cloud: 'openshift', yaml: podYAML, label: label, defaultContainer: 'jnlp') {
+    podTemplate(cloud: 'openshift', yaml: podYAML, label: label) {
         node(label) { container('worker') {
             body.call()
         }}

@@ -17,8 +17,10 @@ def pod(params, body) {
         params['runAsUser'] = 0
     }
     if (params['runAsUser'] != null) {
-        // XXX: tmp hack to get anyuid SCC; need to ask to get jenkins SA added
-        podObj['spec']['serviceAccountName'] = "papr"
+        // XXX: hack for the old projectatomic-ci namespace. coreos-ci's jenkins has anyuid already
+        if (params['coreosci'] == null || params['coreosci'] == false) {
+            podObj['spec']['serviceAccountName'] = "papr"
+        }
         podObj['spec']['containers'][1]['securityContext'] = [runAsUser: params['runAsUser']]
     }
 

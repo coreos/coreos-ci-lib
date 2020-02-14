@@ -11,5 +11,10 @@ def call(params = [:], Closure body) {
         }
     }
 
+    // default to enabling KVM
+    if (params['kvm'] == null) {
+        params['kvm'] = true
+    }
+
     pod(params, body)
 }

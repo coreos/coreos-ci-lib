@@ -1,15 +1,17 @@
 // Build FCOS, possibly with modifications.
 // Available parameters:
 //    make:         boolean -- run `make && make install DESTDIR=...`
+//    skipInit:     boolean -- assume `cosa init` has already been run
 //    makeDirs:   []string  -- extra list of directories from which to `make && make install DESTDIR=...`
 //    skipKola:     boolean -- don't automatically run kola on resulting build
 //    overlays:   []string  -- list of directories to overlay
 def call(params = [:]) {
     stage("Build FCOS") {
-        shwrap("""
-        mkdir /srv/fcos && cd /srv/fcos
-        cosa init https://github.com/coreos/fedora-coreos-config
-        """)
+        shwrap("mkdir /srv/fcos")
+
+        if (!params['skipInit']) {
+            shwrap("cd /srv/fcos && cosa init https://github.com/coreos/fedora-coreos-config")
+        }
 
         if (params['make']) {
             shwrap("make && make install DESTDIR=/srv/fcos/overrides/rootfs")

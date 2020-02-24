@@ -7,7 +7,7 @@
 //    overlays:   []string  -- list of directories to overlay
 def call(params = [:]) {
     stage("Build FCOS") {
-        shwrap("mkdir /srv/fcos")
+        shwrap("mkdir -p /srv/fcos")
 
         if (!params['skipInit']) {
             shwrap("cd /srv/fcos && cosa init https://github.com/coreos/fedora-coreos-config")

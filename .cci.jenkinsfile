@@ -1,0 +1,9 @@
+// Documentation: https://github.com/coreos/coreos-ci/blob/master/README-upstream-ci.md
+
+library "github.com/coreos/coreos-ci-lib@pull/${env.CHANGE_ID}/merge"
+
+cosaPod(buildroot: true) {
+    checkout scm
+
+    fcosBuild()
+}

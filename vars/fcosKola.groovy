@@ -3,8 +3,12 @@ def call(cosaDir = "/srv/fcos") {
     stage('Kola') {
         parallel run: {
             stage("run") {
+                def args = ""
+                if (shwrapRc("test -d tests/kola") == 0) {
+                    args += "--exttest ${env.WORKSPACE}/tests/kola"
+                }
                 try {
-                    shwrap("cd ${cosaDir} && cosa kola run --parallel 8")
+                    shwrap("cd ${cosaDir} && cosa kola run --parallel 8 ${args}")
                 } finally {
                     shwrap("tar -c -C ${cosaDir}/tmp kola | xz -c9 > ${env.WORKSPACE}/kola.tar.xz")
                     archiveArtifacts allowEmptyArchive: true, artifacts: 'kola.tar.xz'

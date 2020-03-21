@@ -5,7 +5,7 @@ def call(cosaDir = "/srv/fcos") {
             stage("run") {
                 def args = ""
                 if (shwrapRc("test -d tests/kola") == 0) {
-                    args += "--exttest ${env.WORKSPACE}/tests/kola"
+                    args += "--exttest ${env.WORKSPACE}"
                 }
                 try {
                     shwrap("cd ${cosaDir} && cosa kola run --parallel 8 ${args}")

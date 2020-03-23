@@ -4,7 +4,14 @@ def call(cosaDir = "/srv/fcos") {
         parallel run: {
             stage("run") {
                 def args = ""
-                if (shwrapRc("test -d tests/kola") == 0) {
+                // Add the tests/kola directory, but only if it's not the same as the
+                // src/config repo which is also automatically added.
+                if (shwrapRc("""
+                    test -d tests/kola
+                    configorigin=\$(cd ${cosaDir}/src/config & git config --get remote.origin.url)
+                    gitorigin=\$(cd ${env.WORKSPACE} && git config --get remote.origin.url)
+                    test "\$configorigin" -ne "\$gitorigin"
+                """) == 0) {
                     args += "--exttest ${env.WORKSPACE}"
                 }
                 try {

@@ -10,7 +10,7 @@ def call(cosaDir = "/srv/fcos") {
                     test -d tests/kola
                     configorigin=\$(cd ${cosaDir}/src/config & git config --get remote.origin.url)
                     gitorigin=\$(cd ${env.WORKSPACE} && git config --get remote.origin.url)
-                    test "\$configorigin" -ne "\$gitorigin"
+                    test "\$configorigin" != "\$gitorigin"
                 """) == 0) {
                     args += "--exttest ${env.WORKSPACE}"
                 }

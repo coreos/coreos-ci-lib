@@ -1,7 +1,9 @@
 // Run kola tests on the latest build in the cosa dir
 // Available parameters:
 //    cosaDir:         string  -- cosa working directory
+//    parallel:        integer -- Default 8 (this may be changed in the future)
 //    skipUpgrade:     boolean -- skip running `cosa kola --upgrades`
+//    extraArgs:       string  -- kola args (usually a glob pattern like `ext.*`)
 def call(params = [:]) {
     def cosaDir = "/srv/fcos"
     if (params['cosaDir']) {
@@ -27,8 +29,10 @@ def call(params = [:]) {
             {
                 args += "--exttest ${env.WORKSPACE}"
             }
+            def parallel = params.get('parallel', 8);
+            def extraArgs = params.get('extraArgs', "");
             try {
-                shwrap("cd ${cosaDir} && cosa kola run --parallel 8 ${args}")
+                shwrap("cd ${cosaDir} && cosa kola run --parallel ${parallel} ${args} ${extraArgs}")
             } finally {
                 shwrap("tar -c -C ${cosaDir}/tmp kola | xz -c9 > ${env.WORKSPACE}/kola.tar.xz")
                 archiveArtifacts allowEmptyArchive: true, artifacts: 'kola.tar.xz'

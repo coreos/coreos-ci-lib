@@ -21,7 +21,7 @@ def call(params = [:]) {
             // Add the tests/kola directory, but only if it's not the same as the
             // src/config repo which is also automatically added.
             if (shwrapRc("""
-                test -d tests/kola
+                test -d ${env.WORKSPACE}/tests/kola
                 configorigin=\$(cd ${cosaDir}/src/config & git config --get remote.origin.url)
                 gitorigin=\$(cd ${env.WORKSPACE} && git config --get remote.origin.url)
                 test "\$configorigin" != "\$gitorigin"

@@ -3,6 +3,7 @@
 //    cosaDir:         string  -- cosa working directory
 //    parallel:        integer -- Default 8 (this may be changed in the future)
 //    skipUpgrade:     boolean -- skip running `cosa kola --upgrades`
+//    workspaceTests:  boolean -- (default true); set to false to skip adding -E for workspace
 //    extraArgs:       string  -- kola args (usually a glob pattern like `ext.*`)
 def call(params = [:]) {
     def cosaDir = "/srv/fcos"
@@ -18,15 +19,11 @@ def call(params = [:]) {
     kolaRuns["run"] = {
         stage("run") {
             def args = ""
-            // Add the tests/kola directory, but only if it's not the same as the
-            // src/config repo which is also automatically added.
-            if (shwrapRc("""
-                test -d ${env.WORKSPACE}/tests/kola
-                configorigin=\$(cd ${cosaDir}/src/config & git config --get remote.origin.url)
-                gitorigin=\$(cd ${env.WORKSPACE} && git config --get remote.origin.url)
-                test "\$configorigin" != "\$gitorigin"
-            """) == 0)
-            {
+            // Add the tests/kola directory if it exists automatically;
+            // we support suppressing it in the case of e.g. fedora-coreos-config
+            // because otherwise we'd get duplicate tests since coreos-assembler
+            // automatically adds src/config.
+            if (params.get('workspaceTests', true) && shwrapRc("test -d ${env.WORKSPACE}/tests/kola") == 0) {
                 args += "--exttest ${env.WORKSPACE}"
             }
             def parallel = params.get('parallel', 8);

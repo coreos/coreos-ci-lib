@@ -28,7 +28,7 @@ def call(params = [:]) {
             }
         }
 
-        shwrap("cd /srv/fcos && cosa build")
+        shwrap("cd /srv/fcos && cosa build --strict")
     }
 
     if (!params['skipKola']) {

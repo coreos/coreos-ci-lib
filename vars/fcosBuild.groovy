@@ -28,6 +28,7 @@ def call(params = [:]) {
             }
         }
 
+        shwrap("cd /srv/fcos && cosa fetch --strict")
         shwrap("cd /srv/fcos && cosa build --strict")
     }
 

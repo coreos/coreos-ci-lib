@@ -5,6 +5,7 @@
 //    makeDirs:   []string  -- extra list of directories from which to `make && make install DESTDIR=...`
 //    skipKola:     boolean -- don't automatically run kola on resulting build
 //    overlays:   []string  -- list of directories to overlay
+//    extraArgs:    string  -- extra arguments to pass to `cosa build`
 def call(params = [:]) {
     stage("Build FCOS") {
         shwrap("mkdir -p /srv/fcos")
@@ -29,7 +30,9 @@ def call(params = [:]) {
         }
 
         shwrap("cd /srv/fcos && cosa fetch --strict")
-        shwrap("cd /srv/fcos && cosa build --strict")
+
+        def extraArgs = params.get('extraArgs', "");
+        shwrap("cd /srv/fcos && cosa build --strict ${extraArgs}")
     }
 
     if (!params['skipKola']) {

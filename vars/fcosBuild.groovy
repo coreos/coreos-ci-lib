@@ -1,11 +1,12 @@
 // Build FCOS, possibly with modifications.
 // Available parameters:
-//    make:         boolean -- run `make && make install DESTDIR=...`
-//    skipInit:     boolean -- assume `cosa init` has already been run
-//    makeDirs:   []string  -- extra list of directories from which to `make && make install DESTDIR=...`
-//    skipKola:     boolean -- don't automatically run kola on resulting build
-//    overlays:   []string  -- list of directories to overlay
-//    extraArgs:    string  -- extra arguments to pass to `cosa build`
+//    make:           boolean -- run `make && make install DESTDIR=...`
+//    skipInit:       boolean -- assume `cosa init` has already been run
+//    makeDirs:     []string  -- extra list of directories from which to `make && make install DESTDIR=...`
+//    skipKola:       boolean -- don't automatically run kola on resulting build
+//    overlays:     []string  -- list of directories to overlay
+//    extraFetchArgs: string  -- extra arguments to pass to `cosa fetch`
+//    extraArgs:      string  -- extra arguments to pass to `cosa build`
 def call(params = [:]) {
     stage("Build FCOS") {
         shwrap("mkdir -p /srv/fcos")
@@ -29,7 +30,8 @@ def call(params = [:]) {
             }
         }
 
-        shwrap("cd /srv/fcos && cosa fetch --strict")
+        def extraFetchArgs = params.get('extraFetchArgs', "");
+        shwrap("cd /srv/fcos && cosa fetch --strict ${extraFetchArgs}")
 
         def extraArgs = params.get('extraArgs', "");
         shwrap("cd /srv/fcos && cosa build --strict ${extraArgs}")

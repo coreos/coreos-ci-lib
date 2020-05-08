@@ -16,5 +16,8 @@ def call(params = [:], Closure body) {
         params['kvm'] = true
     }
 
-    pod(params, body)
+    pod(params) {
+        shwrap("cat /cosa/coreos-assembler-git.json || :")
+        body()
+    }
 }

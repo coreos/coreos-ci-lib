@@ -15,16 +15,16 @@ def call(params = [:], Closure body) {
         podObj['spec']['containers'][1]['securityContext'] = [runAsUser: params['runAsUser']]
     }
 
-    if (params['kvm']) {
-        podObj['spec']['nodeSelector'] = [oci_kvm_hook: "allowed"]
-    }
-
-    podObj['spec']['containers'][1]['resources'] = [requests: [:]]
+    podObj['spec']['containers'][1]['resources'] = [requests: [:], limits: [:]]
     if (params['memory']) {
         podObj['spec']['containers'][1]['resources']['requests']['memory'] = params['memory'].toString()
     }
     if (params['cpu']) {
         podObj['spec']['containers'][1]['resources']['requests']['cpu'] = params['cpu'].toString()
+    }
+    if (params['kvm']) {
+        podObj['spec']['containers'][1]['resources']['requests']['devices.kubevirt.io/kvm'] = "1"
+        podObj['spec']['containers'][1]['resources']['limits']['devices.kubevirt.io/kvm'] = "1"
     }
 
     if (!params['emptyDirs']) {

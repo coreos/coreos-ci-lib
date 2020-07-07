@@ -49,7 +49,7 @@ def call(params = [:], Closure body) {
         podYAML = readFile(file: "${label}.yaml")
     }
 
-    podTemplate(cloud: 'openshift', yaml: podYAML, label: label) {
+    podTemplate(cloud: 'openshift', yaml: podYAML, label: label, slaveConnectTimeout: 300) {
         node(label) { container('worker') {
             body()
         }}

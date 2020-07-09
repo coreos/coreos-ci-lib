@@ -4,14 +4,6 @@
     "spec": {
         "containers": [
             {
-                "name": "jnlp",
-                "image": "jenkins-slave-base-centos7:latest",
-                "args": [
-                    "$(JENKINS_SECRET)",
-                    "$(JENKINS_NAME)"
-                ]
-            },
-            {
                 "name": "worker",
                 "imagePullPolicy": "Always",
                 "command": [

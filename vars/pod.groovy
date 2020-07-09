@@ -9,22 +9,22 @@
 def call(params = [:], Closure body) {
     def podJSON = libraryResource 'com/github/coreos/pod.json'
     def podObj = readJSON text: podJSON
-    podObj['spec']['containers'][1]['image'] = params['image']
+    podObj['spec']['containers'][0]['image'] = params['image']
 
     if (params['runAsUser'] != null) {
-        podObj['spec']['containers'][1]['securityContext'] = [runAsUser: params['runAsUser']]
+        podObj['spec']['containers'][0]['securityContext'] = [runAsUser: params['runAsUser']]
     }
 
-    podObj['spec']['containers'][1]['resources'] = [requests: [:], limits: [:]]
+    podObj['spec']['containers'][0]['resources'] = [requests: [:], limits: [:]]
     if (params['memory']) {
-        podObj['spec']['containers'][1]['resources']['requests']['memory'] = params['memory'].toString()
+        podObj['spec']['containers'][0]['resources']['requests']['memory'] = params['memory'].toString()
     }
     if (params['cpu']) {
-        podObj['spec']['containers'][1]['resources']['requests']['cpu'] = params['cpu'].toString()
+        podObj['spec']['containers'][0]['resources']['requests']['cpu'] = params['cpu'].toString()
     }
     if (params['kvm']) {
-        podObj['spec']['containers'][1]['resources']['requests']['devices.kubevirt.io/kvm'] = "1"
-        podObj['spec']['containers'][1]['resources']['limits']['devices.kubevirt.io/kvm'] = "1"
+        podObj['spec']['containers'][0]['resources']['requests']['devices.kubevirt.io/kvm'] = "1"
+        podObj['spec']['containers'][0]['resources']['limits']['devices.kubevirt.io/kvm'] = "1"
     }
 
     if (!params['emptyDirs']) {
@@ -35,10 +35,10 @@ def call(params = [:], Closure body) {
     params['emptyDirs'] += '/srv/'
 
     podObj['spec']['volumes'] = []
-    podObj['spec']['containers'][1]['volumeMounts'] = []
+    podObj['spec']['containers'][0]['volumeMounts'] = []
     params['emptyDirs'].eachWithIndex { mountPath, i ->
         podObj['spec']['volumes'] += ['name': "emptydir-${i}".toString(), 'emptyDir': [:]]
-        podObj['spec']['containers'][1]['volumeMounts'] += ['name': "emptydir-${i}".toString(), 'mountPath': mountPath]
+        podObj['spec']['containers'][0]['volumeMounts'] += ['name': "emptydir-${i}".toString(), 'mountPath': mountPath]
     }
 
     // XXX: look into converting to a YAML string instead

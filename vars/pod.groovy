@@ -6,6 +6,7 @@
 //   memory: amount of RAM to request
 //   cpu: amount of CPU to request
 //   emptyDirs: []string
+//   cmd: []string
 def call(params = [:], Closure body) {
     def podJSON = libraryResource 'com/github/coreos/pod.json'
     def podObj = readJSON text: podJSON
@@ -29,6 +30,10 @@ def call(params = [:], Closure body) {
 
     if (!params['emptyDirs']) {
         params['emptyDirs'] = []
+    }
+
+    if (params['cmd']) {
+        podObj['spec']['containers'][0]['command'] = params['cmd']
     }
 
     // for now, we always mount an emptyDir on /srv

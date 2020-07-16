@@ -16,6 +16,9 @@ def call(params = [:], Closure body) {
         params['kvm'] = true
     }
 
+    // we don't like zombies
+    params['cmd'] = ["/usr/bin/dumb-init", "/usr/bin/sleep", "infinity"]
+
     pod(params) {
         shwrap("cat /cosa/coreos-assembler-git.json || :")
         body()

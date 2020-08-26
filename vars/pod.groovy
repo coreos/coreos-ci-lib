@@ -7,6 +7,7 @@
 //   cpu: amount of CPU to request
 //   emptyDirs: []string
 //   cmd: []string
+//   secrets: []string
 def call(params = [:], Closure body) {
     def podJSON = libraryResource 'com/github/coreos/pod.json'
     def podObj = readJSON text: podJSON
@@ -32,6 +33,10 @@ def call(params = [:], Closure body) {
         params['emptyDirs'] = []
     }
 
+    if (!params['secrets']) {
+        params['secrets'] = []
+    }
+
     if (params['cmd']) {
         podObj['spec']['containers'][0]['command'] = params['cmd']
     }
@@ -44,6 +49,11 @@ def call(params = [:], Closure body) {
     params['emptyDirs'].eachWithIndex { mountPath, i ->
         podObj['spec']['volumes'] += ['name': "emptydir-${i}".toString(), 'emptyDir': [:]]
         podObj['spec']['containers'][0]['volumeMounts'] += ['name': "emptydir-${i}".toString(), 'mountPath': mountPath]
+    }
+
+    params['secrets'].eachWithIndex { secret, i ->
+        podObj['spec']['volumes'] += ['name': "secret-${i}".toString(), 'secret': [secretName: secret]]
+        podObj['spec']['containers'][0]['volumeMounts'] += ['name': "secret-${i}".toString(), 'mountPath': "/run/kubernetes/secrets/${secret}".toString()]
     }
 
     // XXX: look into converting to a YAML string instead

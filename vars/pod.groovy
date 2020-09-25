@@ -17,7 +17,10 @@ def call(params = [:], Closure body) {
         podObj['spec']['containers'][0]['securityContext'] = [runAsUser: params['runAsUser']]
     }
 
+    // initialize some maps/lists to make it easier to populate later on
+    podObj['spec']['containers'][0]['env'] = []
     podObj['spec']['containers'][0]['resources'] = [requests: [:], limits: [:]]
+
     if (params['memory']) {
         podObj['spec']['containers'][0]['resources']['requests']['memory'] = params['memory'].toString()
     }
@@ -54,6 +57,9 @@ def call(params = [:], Closure body) {
     params['secrets'].eachWithIndex { secret, i ->
         podObj['spec']['volumes'] += ['name': "secret-${i}".toString(), 'secret': [secretName: secret]]
         podObj['spec']['containers'][0]['volumeMounts'] += ['name': "secret-${i}".toString(), 'mountPath': "/run/kubernetes/secrets/${secret}".toString()]
+        secret = secret.replace("-", "_")
+        secret = secret.toUpperCase()
+        podObj['spec']['containers'][0]['env'] += ['name': secret, 'value': "/run/kubernetes/secrets/${secret}".toString()]
     }
 
     // XXX: look into converting to a YAML string instead

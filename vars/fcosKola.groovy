@@ -1,14 +1,18 @@
 // Run kola tests on the latest build in the cosa dir
 // Available parameters:
 //    cosaDir:         string  -- cosa working directory
-//    parallel:        integer -- Default 8 (this may be changed in the future)
+//    parallel:        integer -- number of tests to run in parallel (default: 8)
 //    skipUpgrade:     boolean -- skip running `cosa kola --upgrades`
-//    extraArgs:       string  -- kola args (usually a glob pattern like `ext.*`)
+//    build:           string  -- cosa build ID to target
+//    extraArgs:       string  -- additional kola args for `kola run` (e.g. `ext.*`)
 def call(params = [:]) {
     def cosaDir = "/srv/fcos"
     if (params['cosaDir']) {
         cosaDir = params['cosaDir']
     }
+
+    // this is shared between `kola run` and `kola run-upgrade`
+    def buildID = params.get('build', "latest");
 
     // This is a bit obscure; what we're doing here is building a map of "name"
     // to "closure" which `parallel` will run in parallel. That way, we can
@@ -32,7 +36,7 @@ def call(params = [:]) {
             def parallel = params.get('parallel', 8);
             def extraArgs = params.get('extraArgs', "");
             try {
-                shwrap("cd ${cosaDir} && cosa kola run --parallel ${parallel} ${args} ${extraArgs}")
+                shwrap("cd ${cosaDir} && cosa kola run --build ${buildID} --parallel ${parallel} ${args} ${extraArgs}")
             } finally {
                 shwrap("tar -c -C ${cosaDir}/tmp kola | xz -c9 > ${env.WORKSPACE}/kola.tar.xz")
                 archiveArtifacts allowEmptyArchive: true, artifacts: 'kola.tar.xz'
@@ -45,7 +49,7 @@ def call(params = [:]) {
         kolaRuns['run_upgrades'] = {
             stage("run-upgrade") {
                 try {
-                    shwrap("cd ${cosaDir} && cosa kola --upgrades")
+                    shwrap("cd ${cosaDir} && cosa kola --upgrades --build ${buildID}")
                 } finally {
                     shwrap("tar -c -C ${cosaDir}/tmp kola-upgrade | xz -c9 > ${env.WORKSPACE}/kola-upgrade.tar.xz")
                     archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-upgrade.tar.xz'

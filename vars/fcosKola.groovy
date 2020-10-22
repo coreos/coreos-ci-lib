@@ -4,6 +4,7 @@
 //    parallel:        integer -- number of tests to run in parallel (default: 8)
 //    skipUpgrade:     boolean -- skip running `cosa kola --upgrades`
 //    build:           string  -- cosa build ID to target
+//    platformArgs:    string  -- platform-specific kola args (e.g. '-p aws --aws-ami ...`)
 //    extraArgs:       string  -- additional kola args for `kola run` (e.g. `ext.*`)
 def call(params = [:]) {
     def cosaDir = "/srv/fcos"
@@ -12,6 +13,7 @@ def call(params = [:]) {
     }
 
     // this is shared between `kola run` and `kola run-upgrade`
+    def platformArgs = params.get('platformArgs', "");
     def buildID = params.get('build', "latest");
 
     // This is a bit obscure; what we're doing here is building a map of "name"
@@ -36,7 +38,7 @@ def call(params = [:]) {
             def parallel = params.get('parallel', 8);
             def extraArgs = params.get('extraArgs', "");
             try {
-                shwrap("cd ${cosaDir} && cosa kola run --build ${buildID} --parallel ${parallel} ${args} ${extraArgs}")
+                shwrap("cd ${cosaDir} && cosa kola run --build ${buildID} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
             } finally {
                 shwrap("tar -c -C ${cosaDir}/tmp kola | xz -c9 > ${env.WORKSPACE}/kola.tar.xz")
                 archiveArtifacts allowEmptyArchive: true, artifacts: 'kola.tar.xz'
@@ -49,7 +51,7 @@ def call(params = [:]) {
         kolaRuns['run_upgrades'] = {
             stage("run-upgrade") {
                 try {
-                    shwrap("cd ${cosaDir} && cosa kola --upgrades --build ${buildID}")
+                    shwrap("cd ${cosaDir} && cosa kola --upgrades --build ${buildID} ${platformArgs}")
                 } finally {
                     shwrap("tar -c -C ${cosaDir}/tmp kola-upgrade | xz -c9 > ${env.WORKSPACE}/kola-upgrade.tar.xz")
                     archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-upgrade.tar.xz'

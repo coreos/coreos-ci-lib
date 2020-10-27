@@ -6,11 +6,11 @@
 //    build:           string  -- cosa build ID to target
 //    platformArgs:    string  -- platform-specific kola args (e.g. '-p aws --aws-ami ...`)
 //    extraArgs:       string  -- additional kola args for `kola run` (e.g. `ext.*`)
+//    basicScenarios   boolean -- run basic qemu scenarios
+//    skipSelfTests    boolean -- run kola self tests
+//    skipSanity       boolean -- skip skip checks
 def call(params = [:]) {
-    def cosaDir = "/srv/fcos"
-    if (params['cosaDir']) {
-        cosaDir = params['cosaDir']
-    }
+    def cosaDir = utils.getCosaDir(params)
 
     // this is shared between `kola run` and `kola run-upgrade`
     def platformArgs = params.get('platformArgs', "");
@@ -22,7 +22,6 @@ def call(params = [:]) {
     // skipped.
     kolaRuns = [:]
     kolaRuns["run"] = {
-        stage("run") {
             def args = ""
             // Add the tests/kola directory, but only if it's not the same as the
             // src/config repo which is also automatically added.
@@ -38,31 +37,45 @@ def call(params = [:]) {
             def parallel = params.get('parallel', 8);
             def extraArgs = params.get('extraArgs', "");
             try {
+                if (params['basicScenarios']) {
+                    shwrap("cd ${cosaDir} && cosa kola run --basic-qemu-scenarios")
+                }
                 shwrap("cd ${cosaDir} && cosa kola run --build ${buildID} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
             } finally {
                 shwrap("tar -c -C ${cosaDir}/tmp kola | xz -c9 > ${env.WORKSPACE}/kola.tar.xz")
                 archiveArtifacts allowEmptyArchive: true, artifacts: 'kola.tar.xz'
             }
-            // sanity check kola actually ran and dumped its output in tmp/
-            shwrap("test -d ${cosaDir}/tmp/kola")
-        }
+            if (!params['skipSanity']) {
+                    // sanity check kola actually ran and dumped its output in tmp/
+                    shwrap("test -d ${cosaDir}/tmp/kola")
+            }
     }
     if (!params["skipUpgrade"]) {
         kolaRuns['run_upgrades'] = {
-            stage("run-upgrade") {
                 try {
                     shwrap("cd ${cosaDir} && cosa kola --upgrades --build ${buildID} ${platformArgs}")
                 } finally {
                     shwrap("tar -c -C ${cosaDir}/tmp kola-upgrade | xz -c9 > ${env.WORKSPACE}/kola-upgrade.tar.xz")
                     archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-upgrade.tar.xz'
                 }
-                // sanity check kola actually ran and dumped its output in tmp/
-                shwrap("test -d ${cosaDir}/tmp/kola-upgrade")
-            }
+                if (!params['skipSanity']) {
+                    // sanity check kola actually ran and dumped its output in tmp/
+                    shwrap("test -d ${cosaDir}/tmp/kola-upgrade")
+                }
         }
     }
-
-    stage('Kola') {
+    if (!params["skipSelfTests"]) {
+        kolaRuns['run_self_tests'] = {
+                try {
+                    shwrap("cd ${cosaDir} && ${env.WORKSPACE}/ci/run-kola-self-tests")
+                } finally {
+                    shwrap("tar -c -C ${cosaDir}/tmp kolaself | xz -c9 > ${env.WORKSPACE}/kolaself.tar.xz")
+                    archiveArtifacts allowEmptyArchive: true, artifacts: 'kolaself.tar.xz'	
+                }
+        }
+    }
+        
+    stage('Kola QEMU') {
         parallel(kolaRuns)
     }
 }

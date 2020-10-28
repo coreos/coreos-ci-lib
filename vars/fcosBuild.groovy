@@ -7,34 +7,36 @@
 //    overlays:     []string  -- list of directories to overlay
 //    extraFetchArgs: string  -- extra arguments to pass to `cosa fetch`
 //    extraArgs:      string  -- extra arguments to pass to `cosa build`
+//    cosaDir:        string  -- cosa working directory
 def call(params = [:]) {
     stage("Build FCOS") {
-        shwrap("mkdir -p /srv/fcos")
+        def cosaDir = utils.getCosaDir(params)
+        shwrap("mkdir -p ${cosaDir}")
 
         if (!params['skipInit']) {
-            shwrap("cd /srv/fcos && cosa init https://github.com/coreos/fedora-coreos-config")
+            shwrap("cd ${cosaDir} && cosa init https://github.com/coreos/fedora-coreos-config")
         }
 
         if (params['make']) {
-            shwrap("make && make install DESTDIR=/srv/fcos/overrides/rootfs")
+            shwrap("make && make install DESTDIR=${cosaDir}/overrides/rootfs")
         }
         if (params['makeDirs']) {
             params['makeDirs'].each{
-                shwrap("make -C ${it} && make -C ${it} install DESTDIR=/srv/fcos/overrides/rootfs")
+                shwrap("make -C ${it} && make -C ${it} install DESTDIR=${cosaDir}/overrides/rootfs")
             }
         }
 
         if (params['overlays']) {
             params['overlays'].each{
-                shwrap("rsync -av ${it}/ /srv/fcos/overrides/rootfs")
+                shwrap("rsync -av ${it}/ ${cosaDir}/overrides/rootfs")
             }
         }
 
         def extraFetchArgs = params.get('extraFetchArgs', "");
-        shwrap("cd /srv/fcos && cosa fetch --strict ${extraFetchArgs}")
+        shwrap("cd ${cosaDir} && cosa fetch --strict ${extraFetchArgs}")
 
         def extraArgs = params.get('extraArgs', "");
-        shwrap("cd /srv/fcos && cosa build --strict ${extraArgs}")
+        shwrap("cd ${cosaDir} && cosa build --strict ${extraArgs}")
     }
 
     if (!params['skipKola']) {

@@ -7,10 +7,7 @@
 //    platformArgs:    string  -- platform-specific kola args (e.g. '-p aws --aws-ami ...`)
 //    extraArgs:       string  -- additional kola args for `kola run` (e.g. `ext.*`)
 def call(params = [:]) {
-    def cosaDir = "/srv/fcos"
-    if (params['cosaDir']) {
-        cosaDir = params['cosaDir']
-    }
+    def cosaDir = utils.getCosaDir(params)
 
     // this is shared between `kola run` and `kola run-upgrade`
     def platformArgs = params.get('platformArgs', "");

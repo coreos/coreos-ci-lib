@@ -6,6 +6,7 @@
 //    build:           string  -- cosa build ID to target
 //    platformArgs:    string  -- platform-specific kola args (e.g. '-p aws --aws-ami ...`)
 //    extraArgs:       string  -- additional kola args for `kola run` (e.g. `ext.*`)
+//    basicScenarios   boolean -- run basic qemu scenarios
 def call(params = [:]) {
     def cosaDir = "/srv/fcos"
     if (params['cosaDir']) {
@@ -38,6 +39,9 @@ def call(params = [:]) {
             def parallel = params.get('parallel', 8);
             def extraArgs = params.get('extraArgs', "");
             try {
+                if (params['basicScenarios']) {
+                    shwrap("cd ${cosaDir} && cosa kola run --basic-qemu-scenarios")
+                }
                 shwrap("cd ${cosaDir} && cosa kola run --build ${buildID} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
             } finally {
                 shwrap("tar -c -C ${cosaDir}/tmp kola | xz -c9 > ${env.WORKSPACE}/kola.tar.xz")

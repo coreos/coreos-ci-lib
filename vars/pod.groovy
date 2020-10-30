@@ -8,6 +8,7 @@
 //   emptyDirs: []string
 //   cmd: []string
 //   secrets: []string
+//   configMaps: []string
 def call(params = [:], Closure body) {
     def podJSON = libraryResource 'com/github/coreos/pod.json'
     def podObj = readJSON text: podJSON
@@ -40,6 +41,10 @@ def call(params = [:], Closure body) {
         params['secrets'] = []
     }
 
+    if (!params['configMaps']) {
+        params['configMaps'] = []
+    }
+
     if (params['cmd']) {
         podObj['spec']['containers'][0]['command'] = params['cmd']
     }
@@ -60,6 +65,14 @@ def call(params = [:], Closure body) {
 
         def envName = secret.replace("-", "_").toUpperCase()
         podObj['spec']['containers'][0]['env'] += ['name': envName, 'value': "/run/kubernetes/secrets/${secret}".toString()]
+    }
+
+    params['configMaps'].eachWithIndex { configMap, i ->
+        podObj['spec']['volumes'] += ['name': "config-${i}".toString(), 'configMap': [name: configMap]]
+        podObj['spec']['containers'][0]['volumeMounts'] += ['name': "config-${i}".toString(), 'mountPath': "/run/kubernetes/configMaps/${configMap}".toString()]
+
+        def envName = configMap.replace("-", "_").toUpperCase()
+        podObj['spec']['containers'][0]['env'] += ['name': envName, 'value': "/run/kubernetes/configMaps/${configMap}".toString()]
     }
 
     // XXX: look into converting to a YAML string instead

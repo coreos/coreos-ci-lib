@@ -1,5 +1,6 @@
 // Run kola tests on the latest build in the cosa dir
 // Available parameters:
+//    addExtTests:    []string -- list of test paths to run
 //    cosaDir:         string  -- cosa working directory
 //    parallel:        integer -- number of tests to run in parallel (default: 8)
 //    skipUpgrade:     boolean -- skip running `cosa kola --upgrades`
@@ -34,6 +35,12 @@ def call(params = [:]) {
         }
         def parallel = params.get('parallel', 8);
         def extraArgs = params.get('extraArgs', "");
+        def addExtTests = params.get('addExtTests', [])
+
+        for (path in addExtTests) {
+            args += " --exttest ${env.WORKSPACE}/${path}"
+        }
+
         try {
             if (params['basicScenarios']) {
                 shwrap("cd ${cosaDir} && cosa kola run --basic-qemu-scenarios")

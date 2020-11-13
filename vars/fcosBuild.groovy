@@ -8,6 +8,7 @@
 //    extraFetchArgs: string  -- extra arguments to pass to `cosa fetch`
 //    extraArgs:      string  -- extra arguments to pass to `cosa build`
 //    cosaDir:        string  -- cosa working directory
+//    noForce:        boolean -- don't force a cosa build even if nothing changed
 def call(params = [:]) {
     stage("Build FCOS") {
         def cosaDir = utils.getCosaDir(params)
@@ -36,6 +37,9 @@ def call(params = [:]) {
         shwrap("cd ${cosaDir} && cosa fetch --strict ${extraFetchArgs}")
 
         def extraArgs = params.get('extraArgs', "");
+        if (!params['noForce']) {
+            extraArgs = "--force ${extraArgs}"
+        }
         shwrap("cd ${cosaDir} && cosa build --strict ${extraArgs}")
     }
 

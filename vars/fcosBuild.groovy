@@ -9,9 +9,13 @@
 //    extraArgs:      string  -- extra arguments to pass to `cosa build`
 //    cosaDir:        string  -- cosa working directory
 //    noForce:        boolean -- don't force a cosa build even if nothing changed
+//    noStrict        boolean -- do not run cosa using `--strict' option
 def call(params = [:]) {
     stage("Build FCOS") {
         def cosaDir = utils.getCosaDir(params)
+        def extraFetchArgs = params.get('extraFetchArgs', "");
+        def extraArgs = params.get('extraArgs', "");
+
         shwrap("mkdir -p ${cosaDir}")
 
         if (!params['skipInit']) {
@@ -32,15 +36,16 @@ def call(params = [:]) {
                 shwrap("rsync -av ${it}/ ${cosaDir}/overrides/rootfs")
             }
         }
-
-        def extraFetchArgs = params.get('extraFetchArgs', "");
-        shwrap("cd ${cosaDir} && cosa fetch --strict ${extraFetchArgs}")
-
-        def extraArgs = params.get('extraArgs', "");
+        if (!params['noStrict']) {
+            extraFetchArgs = "--strict ${extraFetchArgs}"
+            extraArgs = "--strict ${extraArgs}"
+        }
         if (!params['noForce']) {
             extraArgs = "--force ${extraArgs}"
         }
-        shwrap("cd ${cosaDir} && cosa build --strict ${extraArgs}")
+
+        shwrap("cd ${cosaDir} && cosa fetch ${extraFetchArgs}")
+        shwrap("cd ${cosaDir} && cosa build ${extraArgs}")
     }
 
     if (!params['skipKola']) {

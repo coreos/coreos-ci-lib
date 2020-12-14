@@ -10,6 +10,7 @@
 //    cosaDir:        string  -- cosa working directory
 //    noForce:        boolean -- don't force a cosa build even if nothing changed
 //    noStrict        boolean -- do not run cosa using `--strict' option
+//    user:           string  -- user to run the cosa commands
 def call(params = [:]) {
     stage("Build FCOS") {
         def cosaDir = utils.getCosaDir(params)
@@ -19,7 +20,8 @@ def call(params = [:]) {
         shwrap("mkdir -p ${cosaDir}")
 
         if (!params['skipInit']) {
-            shwrap("cd ${cosaDir} && cosa init https://github.com/coreos/fedora-coreos-config")
+            params['args'] = "init https://github.com/coreos/fedora-coreos-config"
+            utils.cosaCmd(params)
         }
 
         if (params['make']) {
@@ -44,8 +46,10 @@ def call(params = [:]) {
             extraArgs = "--force ${extraArgs}"
         }
 
-        shwrap("cd ${cosaDir} && cosa fetch ${extraFetchArgs}")
-        shwrap("cd ${cosaDir} && cosa build ${extraArgs}")
+        params['args'] = "fetch ${extraFetchArgs}"
+        utils.cosaCmd(params)
+        params['args'] = "build ${extraArgs}"
+        utils.cosaCmd(params)
     }
 
     if (!params['skipKola']) {

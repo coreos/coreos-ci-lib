@@ -4,6 +4,7 @@
 //    skipInit:       boolean -- assume `cosa init` has already been run
 //    makeDirs:     []string  -- extra list of directories from which to `make && make install DESTDIR=...`
 //    skipKola:       boolean -- don't automatically run kola on resulting build
+//    skipDirCreation boolean -- don't create cosaDir
 //    overlays:     []string  -- list of directories to overlay
 //    extraFetchArgs: string  -- extra arguments to pass to `cosa fetch`
 //    extraArgs:      string  -- extra arguments to pass to `cosa build`
@@ -16,8 +17,9 @@ def call(params = [:]) {
         def extraFetchArgs = params.get('extraFetchArgs', "");
         def extraArgs = params.get('extraArgs', "");
 
-        shwrap("mkdir -p ${cosaDir}")
-
+        if (!params['skipDirCreation']) {
+            shwrap("mkdir -p ${cosaDir}")
+        }
         if (!params['skipInit']) {
             shwrap("cd ${cosaDir} && cosa init https://github.com/coreos/fedora-coreos-config")
         }

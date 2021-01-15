@@ -1,0 +1,101 @@
+{
+  "kind":"Template",
+  "apiVersion":"v1",
+  "metadata":{
+    "name":"${NAME}"
+  },
+  "labels":{
+    "template":"${NAME}",
+    "app":"${NAME}"
+  },
+  "objects":[
+    {
+      "kind":"ImageStream",
+      "apiVersion":"v1",
+      "metadata":{
+        "name":"${NAME}",
+        "ownerReferences":[
+          {
+            "apiVersion":"batch/v1",
+            "kind":"Job",
+            "name":"${OWNERNAME}",
+            "uid":"${UID}",
+            "controller":true
+          }
+        ]
+      },
+      "spec":{
+        "failedBuildHistoryLimit":1,
+        "successfulBuildsHistoryLimit":1,
+        "lookupPolicy":{
+          "local":true
+        }
+      }
+    },
+    {
+      "kind":"BuildConfig",
+      "apiVersion":"v1",
+      "metadata":{
+        "name":"${NAME}",
+        "ownerReferences":[
+          {
+            "apiVersion":"batch/v1",
+            "kind":"Job",
+            "name":"${OWNERNAME}",
+            "uid":"${UID}",
+            "controller":true
+          }
+        ]
+      },
+      "spec":{
+        "source":{
+          "type":"Git",
+          "git":{
+            "uri":"none",
+            "ref":"none"
+          }
+	},
+        "strategy":{
+          "dockerStrategy":{
+            "dockerfilePath":"${DOCKERFILE}"
+          },
+          "dockerfilePath":"${DOCKERFILE}"
+        },
+        "output":{
+          "to":{
+            "kind":"ImageStreamTag",
+            "name":"${NAME}:latest",
+            "namespace":"coreos-ci"
+          }
+        }
+      }
+    }
+  ],
+  "parameters":[
+    {
+      "name":"NAME",
+      "displayName":"Name",
+      "description":"The name assigned to all of the frontend objects defined in this template.",
+      "required":true,
+      "value":"none"
+    },
+    {
+      "name":"DOCKERFILE",
+      "displayName":"Docker File",
+      "description":"The Docker file that will be use to build the application",
+      "value":"Dockerfile"
+    },
+    {
+      "name":"OWNERNAME",
+      "displayName":"Owner Name",
+      "description":"Owner Name for cascading delition",
+      "value":"none"
+    },
+    {
+      "name":"UID",
+      "displayName":"Owner uid",
+      "description":"Onwer uid for cascading delition",
+      "value":"none"
+    }
+  ]
+}

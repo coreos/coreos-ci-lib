@@ -1,0 +1,24 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: clean-up
+objects:
+- apiVersion: batch/v1
+  kind: Job
+  metadata:
+    name: "${NAME}"
+  spec:
+    ttlSecondsAfterFinished: 100
+    template:
+      spec:
+        containers:
+        - name: "${NAME}"
+          image: fedora:33
+          command:
+          - sleep
+          - 2h
+        restartPolicy: Never
+parameters:
+- name: NAME
+  required: true
+  value: cleanupJob

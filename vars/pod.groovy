@@ -27,6 +27,9 @@ def call(params = [:], Closure body) {
     }
     if (params['cpu']) {
         podObj['spec']['containers'][0]['resources']['requests']['cpu'] = params['cpu'].toString()
+        // Also propagate CPU count to NCPUS, because it can be hard in a Kubernetes environment
+        // to determine how much CPU one should really use.
+        podObj['spec']['containers'][0]['env'] += ['name': 'NCPUS', 'value': params['cpu'].toString()]
     }
     if (params['kvm']) {
         podObj['spec']['containers'][0]['resources']['requests']['devices.kubevirt.io/kvm'] = "1"

@@ -1,4 +1,4 @@
-// Run the passed body in a pod respecting some parameters.
+// pod runs the passed body in a Kubernetes pod respecting some parameters.
 // Available parameters:
 //   image: string
 //   kvm: bool

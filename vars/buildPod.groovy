@@ -6,6 +6,9 @@ def call(params = [:], Closure body) {
     def stream = params.get('stream', 'testing-devel');
     params['image'] = "quay.io/coreos-assembler/fcos-buildroot:${stream}".toString()
 
+    // we don't like zombies
+    params['cmd'] = ["/usr/bin/dumb-init", "/usr/bin/sleep", "infinity"]
+
     pod(params) {
         body()
     }

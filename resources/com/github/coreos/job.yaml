@@ -13,7 +13,7 @@ objects:
       spec:
         containers:
         - name: "${NAME}"
-          image: fedora:33
+          image: registry.fedoraproject.org/fedora:34
           command:
           - sleep
           - 2h

@@ -1,3 +1,7 @@
+# This job is used by buildImage() as an owner of the various resources it
+# spawns so that for GC it simply needs to delete the job. The actual container
+# here isn't used for anything (other than staying alive for 2h).
+
 kind: Template
 apiVersion: v1
 metadata:

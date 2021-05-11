@@ -2,27 +2,27 @@
 
 // Available parameters:
 //     artifacts:    list    -- list of artifacts to be built
-//     extraFlags    string  -- Extra flags to use
+//     extraFlags:   string  -- Extra flags to use
 //     image:        string  -- Name of the image to be used
 //     mode:         string  -- Gangplank Mode
-//     workDir:      string  -- cosa working directory
+//     workDir:      string  -- Cosa working directory
 
 def buildArtifact(params = [:]) {
-    gangplankCmd = getMode(params)
-    gangplankCmd = getArtifacts(params, gangplankCmd)
+    gangplankCmd = _getMode(params)
+    gangplankCmd = _getArtifacts(params, gangplankCmd)
     runGangplank(gangplankCmd)
 }
 
 // Available parameters:
-//     artifacts:    list    -- list of artifacts to be built
-//     extraFlags    string  -- Extra flags to use
-//     image:        string  -- Name of the image to be used
-//     mode:         string  -- Gangplank Mode
-//     minioServeDir string  -- location to service minio from
-//     workDir:      string  -- cosa working directory
+//     artifacts:     list    -- List of artifacts to be built
+//     extraFlags:    string  -- Extra flags to use
+//     image:         string  -- Name of the image to be used
+//     mode:          string  -- Gangplank Mode
+//     minioServeDir: string  -- Location to service minio from
+//     workDir:       string  -- Cosa working directory
 
 def buildParallelArtifacts(params = [:]) {
-    gangplankCmd = getMode(params)
+    gangplankCmd = _getMode(params)
     if (params['artifacts']) {
         def artifacts = params['artifacts']
         def configFile = startMinio(params)
@@ -31,14 +31,14 @@ def buildParallelArtifacts(params = [:]) {
         parallel artifacts.inject([:]) { d, i -> d[i] = {
             startParallel(configFile, "${gangplankCmd} -A ${i} ")
         }; d }
-        finalize()
+        _finalize()
     }
 }
 
 // Available parameters:
-//     artifacts:    list    -- list of artifacts to be built
-//     extraFlags    string  -- Extra flags to use
-//     singlePod     boolean -- Run generateSinglePod
+//     artifacts:    list    -- List of artifacts to be built
+//     extraFlags:   string  -- Extra flags to use
+//     singlePod:    boolean -- Run generateSinglePod
 
 def generateSpec(params = [:]) {
     if(params['singlePod']) {
@@ -46,19 +46,29 @@ def generateSpec(params = [:]) {
     } else {
         gangplankCmd = "gangplank generate "
     }
-    gangplankCmd = getArtifacts(params, gangplankCmd)
-    gangplankCmd = getFlags(params, gangplankCmd)
+    gangplankCmd = _getArtifacts(params, gangplankCmd)
+    gangplankCmd = _getFlags(params, gangplankCmd)
     fileName = "/tmp/jobspec-${UUID.randomUUID()}.spec"
     gangplankCmd += "--yaml-out ${fileName} "
     runGangplank(gangplankCmd)
     return fileName
 }
 
+// Available parameters:
+//     configFile:   string  -- Name of the Minio config file previously created
+//     gangplankCmd: string  -- Gangplank command to run
 def startParallel(configFile, gangplankCmd) {
     gangplankCmd += "-m ${configFile}"
     runGangplank(gangplankCmd)
 }
 
+// Available parameters:
+//     artifacts:    list    -- List of artifacts to be built
+//     extraFlags:   string  -- Extra flags to use
+//     image:        string  -- Name of the image to be used
+//     mode:         string  -- Gangplank Mode
+//     minioServeDir string  -- Location to service minio from
+//     workDir:      string  -- Cosa working directory
 def startMinio(params =[:]) {
     def configFile = "/tmp/${UUID.randomUUID()}-minio.yaml"
     def minioServeDir = params.get('minioServeDir', "/srv")
@@ -84,23 +94,23 @@ def runGangplank(gangplankCmd) {
 }
 
 // Available parameters:
-//     artifacts:    list    -- list of artifacts to be built
-//     extraFlags    string  -- Extra flags to use
-//     mode          string  -- Gangplank Mode
-//     spec          string  -- Name of the spec file
+//     artifacts:     list    -- List of artifacts to be built
+//     extraFlags:    string  -- Extra flags to use
+//     mode:          string  -- Gangplank Mode
+//     spec:          string  -- Name of the spec file
 def runSpec(params =[:]) {
     if (params['spec']) {
-        gangplankCmd = getMode(params)
+        gangplankCmd = _getMode(params)
         gangplankCmd += "--spec ${params['spec']} "
         runGangplank(gangplankCmd)
     }
 }
 
-def finalize() {
+def _finalize() {
     runGangplank("gangplank pod -A finalize")
 }
 
-def getArtifacts(params =[:], gangplankCmd) {
+def _getArtifacts(params =[:], gangplankCmd) {
    if (params['artifacts']) {
         def artifacts = params['artifacts'].join(",")
         gangplankCmd += "--build-artifact ${artifacts} "
@@ -109,7 +119,7 @@ def getArtifacts(params =[:], gangplankCmd) {
     return gangplankCmd
 }
 
-def getFlags(params = [:], gangplankCmd) {
+def _getFlags(params = [:], gangplankCmd) {
     if (params['extraFlags'])  {
         gangplankCmd += params['extraFlags'] + " "
         return gangplankCmd
@@ -117,7 +127,7 @@ def getFlags(params = [:], gangplankCmd) {
     return gangplankCmd
 }
 
-def getImage(params = [:], gangplankCmd) {
+def _getImage(params = [:], gangplankCmd) {
     if (params['image']) {
         gangplankCmd += "--image ${params['image']} "
         return gangplankCmd
@@ -125,15 +135,15 @@ def getImage(params = [:], gangplankCmd) {
     return gangplankCmd
 }
 
-def getMode(params = [:]) {
+def _getMode(params = [:]) {
     gangplankCmd = "gangplank " + params.get('mode', "pod") + " "
-    gangplankCmd = getFlags(params, gangplankCmd)
-    gangplankCmd = getImage(params, gangplankCmd)
-    gangplankCmd = getWorkDir(params, gangplankCmd)
+    gangplankCmd = _getFlags(params, gangplankCmd)
+    gangplankCmd = _getImage(params, gangplankCmd)
+    gangplankCmd = _getWorkDir(params, gangplankCmd)
     return gangplankCmd
 }
 
-def getWorkDir(params = [:], gangplankCmd) {
+def _getWorkDir(params = [:], gangplankCmd) {
     if(params['cosaDir']) {
         gangplankCmd += "--workDir ${utils.getCosaDir(params)} "
         return gangplankCmd

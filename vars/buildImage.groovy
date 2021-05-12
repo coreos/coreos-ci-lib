@@ -63,16 +63,18 @@ def call(params = [:]) {
                 // Showing logs in Jenkins is also a way
                 // to wait for the build to finsih
                 build.logs('-f')
-                // Wait for the build to finish and check the status of it 
-                build.watch {
-                    if (it.object().status.phase != "Complete") {
-                        currentBuild.result = 'ABORTED'
-                        error("Error building the image.")
+                // Wait up to 2h for the build to finish
+                timeout(60*2) {
+                    build.untilEach(1) {
+                        def phase = it.object().status.phase
+                        if (phase in ["New", "Pending", "Running"]) {
+                            return false
+                        }
+                        if (phase != "Complete") {
+                            error("Error build image: status phase ${phase}")
+                        }
+                        return true
                     }
-                    // The watch func needs to be finish properly,
-                    // it only allows true/false as a return. That's
-                    // why we can't return the imageName here
-                    return true
                 }
            }
         }

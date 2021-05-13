@@ -7,12 +7,17 @@
 //   cpu: amount of CPU to request
 //   emptyDirs: []string
 //   cmd: []string
+//   serviceAccount: string
 //   secrets: []string
 //   configMaps: []string
 def call(params = [:], Closure body) {
     def podJSON = libraryResource 'com/github/coreos/pod.json'
     def podObj = readJSON text: podJSON
     podObj['spec']['containers'][0]['image'] = params['image']
+
+    if (params['serviceAccount'] != null) {
+        podObj['spec']['containers'][0]['serviceAccount'] = params['serviceAccount']
+    }
 
     if (params['runAsUser'] != null) {
         podObj['spec']['containers'][0]['securityContext'] = [runAsUser: params['runAsUser']]

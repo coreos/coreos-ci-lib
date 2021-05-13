@@ -16,7 +16,7 @@ def call(params = [:], Closure body) {
     podObj['spec']['containers'][0]['image'] = params['image']
 
     if (params['serviceAccount'] != null) {
-        podObj['spec']['containers'][0]['serviceAccount'] = params['serviceAccount']
+        podObj['spec']['serviceAccount'] = params['serviceAccount']
     }
 
     if (params['runAsUser'] != null) {

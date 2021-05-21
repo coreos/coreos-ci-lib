@@ -1,15 +1,16 @@
 // Build FCOS, possibly with modifications.
 // Available parameters:
-//    make:           boolean -- run `make && make install DESTDIR=...`
-//    skipInit:       boolean -- assume `cosa init` has already been run
-//    makeDirs:     []string  -- extra list of directories from which to `make && make install DESTDIR=...`
-//    skipKola:       boolean -- don't automatically run kola on resulting build
-//    overlays:     []string  -- list of directories to overlay
-//    extraFetchArgs: string  -- extra arguments to pass to `cosa fetch`
-//    extraArgs:      string  -- extra arguments to pass to `cosa build`
-//    cosaDir:        string  -- cosa working directory
-//    noForce:        boolean -- don't force a cosa build even if nothing changed
-//    noStrict        boolean -- do not run cosa using `--strict' option
+//    cosaDir:        string   -- Cosa working directory
+//    extraArgs:      string   -- Extra arguments to pass to `cosa build`
+//    extraFetchArgs: string   -- Extra arguments to pass to `cosa fetch`
+//    gitBranch       string   -- Git Branch for fedora-coreos-config
+//    make:           boolean  -- Run `make && make install DESTDIR=...`
+//    makeDirs:       []string -- Extra list of directories from which to `make && make install DESTDIR=...`
+//    noForce:        boolean  -- Do not force a cosa build even if nothing changed
+//    noStrict        boolean  -- Do not run cosa using `--strict' option
+//    overlays:       []string -- List of directories to overlay
+//    skipInit:       boolean  -- Assume `cosa init` has already been run
+//    skipKola:       boolean  -- Do not automatically run kola on resulting build
 def call(params = [:]) {
     stage("Build FCOS") {
         def cosaDir = utils.getCosaDir(params)
@@ -19,7 +20,11 @@ def call(params = [:]) {
         shwrap("mkdir -p ${cosaDir}")
 
         if (!params['skipInit']) {
-            shwrap("cd ${cosaDir} && cosa init https://github.com/coreos/fedora-coreos-config")
+            def branchArg = ""
+            if (params['gitBranch']) {
+                branchArg = "--branch ${params['gitBranch']}"
+            }
+            shwrap("cd ${cosaDir} && cosa init ${branchArg} https://github.com/coreos/fedora-coreos-config")
         }
 
         if (params['make']) {

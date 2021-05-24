@@ -19,7 +19,12 @@ def call(params = [:]) {
         shwrap("mkdir -p ${cosaDir}")
 
         if (!params['skipInit']) {
-            shwrap("cd ${cosaDir} && cosa init https://github.com/coreos/fedora-coreos-config")
+            shwrap("cd ${cosaDir} && git clone https://github.com/coreos/fedora-coreos-config src/config")
+            if (env.BRANCH_NAME != "main") {
+                git_branch = shwrapCapture("git name-rev --name-only HEAD | sed 's|.*/||'")
+                shwrap("pushd ${cosaDir}/src/config && git checkout origin/${git_branch}")
+            }
+            shwrap("cd ${cosaDir} && cosa init --force ${cosaDir}/src/config")
         }
 
         if (params['make']) {

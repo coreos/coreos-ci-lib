@@ -54,12 +54,11 @@
             "uri":"none",
             "ref":"none"
           }
-	},
+        },
         "strategy":{
           "dockerStrategy":{
             "dockerfilePath":"${DOCKERFILE}"
-          },
-          "dockerfilePath":"${DOCKERFILE}"
+          }
         },
         "output":{
           "to":{

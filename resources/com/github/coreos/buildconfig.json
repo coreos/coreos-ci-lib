@@ -57,7 +57,8 @@
         },
         "strategy":{
           "dockerStrategy":{
-            "dockerfilePath":"${DOCKERFILE}"
+            "dockerfilePath":"${DOCKERFILE}",
+            "env": []
           }
         },
         "output":{

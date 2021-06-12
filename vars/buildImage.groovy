@@ -2,9 +2,14 @@
 // Available parameters:
 //    dockerFile    string -- DockerFile used for the buildconfig
 //    workspace     string -- Path for local source dir used for `--from-dir=`
+//    env           dict -- Additional environment variables to set during build
 def call(params = [:]) {
     def imageName
     def bcObj
+
+    if (!params['env']) {
+        params['env'] = []
+    }
 
     openshift.withCluster() {
         openshift.withProject() {
@@ -50,6 +55,10 @@ def call(params = [:]) {
                 bcObj['parameters'][2] +=['name': 'OWNERNAME', 'value': "coreos-ci-$repo-${UUID}".toString()]
                 if (params['dockerFile']) {
                     bcObj['parameters'][1] +=['name': 'DOCKERFILE', 'value': "${params['dockerFile']}".toString()]
+                }
+                params['env'].each{ name, val ->
+                    // should check 'kind' instead
+                    bcObj['objects'][1]['spec']['strategy']['dockerStrategy']['env'] += ['name': name, 'value': val]
                 }
             }
             stage('Create BuildConfig') {

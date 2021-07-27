@@ -10,7 +10,7 @@
 def buildArtifact(params = [:]) {
     gangplankCmd = _getMode(params)
     gangplankCmd = _getArtifacts(params, gangplankCmd)
-    runGangplank(gangplankCmd)
+    _runGangplank(gangplankCmd)
 }
 
 // Available parameters:
@@ -50,7 +50,7 @@ def generateSpec(params = [:]) {
     gangplankCmd = _getFlags(params, gangplankCmd)
     fileName = "/tmp/jobspec-${UUID.randomUUID()}.spec"
     gangplankCmd += "--yaml-out ${fileName} "
-    runGangplank(gangplankCmd)
+    _runGangplank(gangplankCmd)
     return fileName
 }
 
@@ -59,7 +59,7 @@ def generateSpec(params = [:]) {
 //     gangplankCmd: string  -- Gangplank command to run
 def startParallel(configFile, gangplankCmd) {
     gangplankCmd += "-m ${configFile}"
-    runGangplank(gangplankCmd)
+    _runGangplank(gangplankCmd)
 }
 
 // Available parameters:
@@ -76,14 +76,14 @@ def startMinio(params =[:]) {
 
     // Minio needs to run in background, JENKINS_NODE_COOKIE allows it
     gangplankCmd = "export JENKINS_NODE_COOKIE=dontKillMe && nohup ${gangplankCmd} &"
-    runGangplank(gangplankCmd)
+    _runGangplank(gangplankCmd)
     // Workaround - Wait for minio to start
     shwrap("sleep 0.5")
 
     return configFile
 }
 
-def runGangplank(gangplankCmd) {
+def _runGangplank(gangplankCmd) {
     try {
         shwrap("${gangplankCmd}")
     } catch (Exception e) {
@@ -102,12 +102,39 @@ def runSpec(params =[:]) {
     if (params['spec']) {
         gangplankCmd = _getMode(params)
         gangplankCmd += "--spec ${params['spec']} "
-        runGangplank(gangplankCmd)
+        _runGangplank(gangplankCmd)
+    } else {
+        error("runSpec requires a spec param.")
+    }
+}
+
+// Available parameters:
+//     cmd:           string  -- the single command to run
+//     mode:          string  -- Gangplank Mode
+//     extraFlags:    string  -- Extra flags to use
+def runSingleCmd(params = [:]) {
+    if (params['cmd']) {
+        gangplankCmd = _getMode(params)
+        gangplankCmd += " --singleCmd \"${params['cmd']}\""
+        _runGangplank(gangplankCmd)
+    } else {
+        error("runSingleCmd requires a cmd param.")
+    }
+}
+
+// A function to wrap runSpec and runSingleCmd based on params
+// builder host. Accepts a params map with the usual parameters for
+// a call to runSpec or runSingleCmd.
+def runGangplank(params = [:]) {
+    if (params['spec']) {
+        runSpec(params)
+    } else {
+        runSingleCmd(params)
     }
 }
 
 def _finalize() {
-    runGangplank("gangplank pod -A finalize")
+    _runGangplank("gangplank pod -A finalize")
 }
 
 def _getArtifacts(params =[:], gangplankCmd) {
@@ -135,10 +162,19 @@ def _getImage(params = [:], gangplankCmd) {
     return gangplankCmd
 }
 
+def _getArch(params = [:], gangplankCmd) {
+    if (params['arch']) {
+        gangplankCmd += "--arch ${params['arch']} "
+        return gangplankCmd
+    }
+    return gangplankCmd
+}
+
 def _getMode(params = [:]) {
     gangplankCmd = "gangplank " + params.get('mode', "pod") + " "
     gangplankCmd = _getFlags(params, gangplankCmd)
     gangplankCmd = _getImage(params, gangplankCmd)
+    gangplankCmd = _getArch(params, gangplankCmd)
     gangplankCmd = _getWorkDir(params, gangplankCmd)
     return gangplankCmd
 }
@@ -150,4 +186,3 @@ def _getWorkDir(params = [:], gangplankCmd) {
     }
     return gangplankCmd
 }
-

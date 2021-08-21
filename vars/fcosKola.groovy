@@ -14,6 +14,10 @@ def call(params = [:]) {
     // this is shared between `kola run` and `kola run-upgrade`
     def platformArgs = params.get('platformArgs', "");
     def buildID = params.get('build', "latest");
+    def arch = params.get('arch', "");
+    if (arch != "") {
+        arch = "--arch=${arch}"
+    }
 
     // This is a bit obscure; what we're doing here is building a map of "name"
     // to "closure" which `parallel` will run in parallel. That way, we can
@@ -45,7 +49,7 @@ def call(params = [:]) {
             if (params['basicScenarios']) {
                 shwrap("cd ${cosaDir} && cosa kola run --basic-qemu-scenarios")
             }
-            shwrap("cd ${cosaDir} && cosa kola run --build ${buildID} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
+            shwrap("cd ${cosaDir} && cosa kola run --build=${buildID} ${arch} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
         } finally {
             shwrap("tar -c -C ${cosaDir}/tmp kola | xz -c9 > ${env.WORKSPACE}/kola.tar.xz")
             archiveArtifacts allowEmptyArchive: true, artifacts: 'kola.tar.xz'
@@ -56,7 +60,7 @@ def call(params = [:]) {
     if (!params["skipUpgrade"]) {
         kolaRuns['run_upgrades'] = {
             try {
-                shwrap("cd ${cosaDir} && cosa kola --upgrades --build ${buildID} ${platformArgs}")
+                shwrap("cd ${cosaDir} && cosa kola --upgrades --build=${buildID} ${arch} ${platformArgs}")
             } finally {
                 shwrap("tar -c -C ${cosaDir}/tmp kola-upgrade | xz -c9 > ${env.WORKSPACE}/kola-upgrade.tar.xz")
                 archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-upgrade.tar.xz'

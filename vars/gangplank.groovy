@@ -31,7 +31,7 @@ def buildParallelArtifacts(params = [:]) {
         parallel artifacts.inject([:]) { d, i -> d[i] = {
             startParallel(configFile, "${gangplankCmd} -A ${i} ")
         }; d }
-        _finalize()
+        _finalize(params)
     }
 }
 
@@ -133,8 +133,12 @@ def runGangplank(params = [:]) {
     }
 }
 
-def _finalize() {
-    _runGangplank("gangplank pod -A finalize")
+def _finalize(params = [:]) {
+    gangplankCmd = "gangplank pod "
+    gangplankCmd = _getImage(params, gangplankCmd)
+    gangplankCmd = _getBucket(params, gangplankCmd)
+    gangplankCmd += " -A finalize"
+    _runGangplank(gangplankCmd)
 }
 
 def _getArtifacts(params =[:], gangplankCmd) {

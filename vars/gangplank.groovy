@@ -2,6 +2,7 @@
 
 // Available parameters:
 //     artifacts:    list    -- list of artifacts to be built
+//     bucket:       string  -- name other minio bucket to use
 //     extraFlags:   string  -- Extra flags to use
 //     image:        string  -- Name of the image to be used
 //     mode:         string  -- Gangplank Mode
@@ -146,6 +147,14 @@ def _getArtifacts(params =[:], gangplankCmd) {
     return gangplankCmd
 }
 
+def _getBucket(params =[:], gangplankCmd) {
+     if (params['bucket']) {
+        gangplankCmd += "--bucket ${params['bucket']}"
+        return gangplankCmd
+    }
+    return gangplankCmd
+}
+
 def _getFlags(params = [:], gangplankCmd) {
     if (params['extraFlags'])  {
         gangplankCmd += params['extraFlags'] + " "
@@ -176,6 +185,7 @@ def _getMode(params = [:]) {
     gangplankCmd = _getImage(params, gangplankCmd)
     gangplankCmd = _getArch(params, gangplankCmd)
     gangplankCmd = _getWorkDir(params, gangplankCmd)
+    gangplankCmd = _getBucket(params, gangplankCmd)
     return gangplankCmd
 }
 

@@ -3,15 +3,21 @@
 //     cosaDir:        string  -- cosa working directory
 //     extraArgs:      string  -- extra arguments to pass to `kola testiso`
 //     extraArgs4k:    string  -- extra arguments to pass to 4k `kola testiso`
+//     extraArgsUEFI:  string  -- extra arguments to pass to UEFI `kola testiso`
 //     scenarios:      string  -- scenarios to pass to `kola testiso`
 //     scenarios4k:    string  -- scenarios to pass to `kola testiso`
+//     scenariosUEFI:  string  -- scenarios to pass to `kola testiso`
 //     skipMetal4k:    boolean -- skip metal4k image
+//     skipUEFI:       boolean -- skip UEFI tests
 def call(params = [:]) {
     def cosaDir = utils.getCosaDir(params)
     def extraArgs = params.get('extraArgs', "");
     def extraArgs4k = params.get('extraArgs4k', "");
+    def extraArgsUEFI = params.get('extraArgsUEFI', "");
     def scenarios = params.get('scenarios', "");
     def scenarios4k = params.get('scenarios4k', "");
+    // by default, only test that we can boot successfully
+    def scenariosUEFI = params.get('scenariosUEFI', "iso-live-login,iso-add-disk");
 
     testIsoRuns = [:]
     testIsoRuns["metal"] = {
@@ -35,6 +41,17 @@ def call(params = [:]) {
                 }
             } finally {
                 shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-metal4k/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-metal4k.tar.xz")
+            }
+        }
+    }
+    if (!params['skipUEFI']) {
+        testIsoRuns["metalUEFI"] = {
+            try {
+                shwrap("cd ${cosaDir} && kola testiso -S --qemu-firmware=uefi ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir tmp/kola-testiso-uefi")
+                shwrap("cd ${cosaDir} && kola testiso -S --qemu-firmware=uefi-secure ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir tmp/kola-testiso-uefi-secure")
+            } finally {
+                shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-uefi/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-uefi.tar.xz")
+                shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-uefi-secure/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-uefi-secure.tar.xz")
             }
         }
     }

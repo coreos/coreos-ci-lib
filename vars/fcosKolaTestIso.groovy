@@ -25,8 +25,9 @@ def call(params = [:]) {
     // by default, only test that we can boot successfully
     def scenariosUEFI = params.get('scenariosUEFI', "iso-live-login,iso-add-disk");
 
-    testIsoRuns = [:]
-    testIsoRuns["metal"] = {
+    testIsoRuns1 = [:]
+    testIsoRuns2 = [:]
+    testIsoRuns1["metal"] = {
         try {
             if (params['scenarios']) {
                 shwrap("cd ${cosaDir}  && kola testiso -S ${extraArgs} --scenarios ${scenarios} --output-dir tmp/kola-testiso-metal")
@@ -38,7 +39,7 @@ def call(params = [:]) {
         }
     }
     if (!params['skipMetal4k']) {
-        testIsoRuns["metal4k"] = {
+        testIsoRuns1["metal4k"] = {
             try {
                 if (params['scenarios4k']) {
                     shwrap("cd ${cosaDir} &&  kola testiso -S --qemu-native-4k ${extraArgs4k} --scenarios ${scenarios4k} --output-dir tmp/kola-testiso-metal4k")
@@ -51,7 +52,7 @@ def call(params = [:]) {
         }
     }
     if (!params['skipMultipath']) {
-        testIsoRuns["multipath"] = {
+        testIsoRuns2["multipath"] = {
             try {
                 shwrap("cd ${cosaDir} && kola testiso -S --qemu-multipath ${extraArgsMultipath} --scenarios ${scenariosMultipath} --output-dir tmp/kola-testiso-multipath")
             } finally {
@@ -60,7 +61,7 @@ def call(params = [:]) {
         }
     }
     if (!params['skipUEFI']) {
-        testIsoRuns["metalUEFI"] = {
+        testIsoRuns2["metalUEFI"] = {
             try {
                 shwrap("cd ${cosaDir} && kola testiso -S --qemu-firmware=uefi ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir tmp/kola-testiso-uefi")
                 shwrap("cd ${cosaDir} && kola testiso -S --qemu-firmware=uefi-secure ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir tmp/kola-testiso-uefi-secure")
@@ -73,6 +74,7 @@ def call(params = [:]) {
     archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso*.tar.xz'
 
     stage("Test Live Images") {
-        parallel(testIsoRuns)
+        parallel(testIsoRuns1)
+        parallel(testIsoRuns2)
     }
 }

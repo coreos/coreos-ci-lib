@@ -153,7 +153,7 @@ def _getArtifacts(params =[:], gangplankCmd) {
 
 def _getBucket(params =[:], gangplankCmd) {
      if (params['bucket']) {
-        gangplankCmd += "--bucket ${params['bucket']}"
+        gangplankCmd += "--bucket ${params['bucket']} "
         return gangplankCmd
     }
     return gangplankCmd

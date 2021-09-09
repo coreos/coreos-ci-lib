@@ -1,13 +1,13 @@
 // Run kola tests on the latest build in the cosa dir
 // Available parameters:
-//    addExtTests:    []string -- list of test paths to run
-//    cosaDir:         string  -- cosa working directory
-//    parallel:        integer -- number of tests to run in parallel (default: 8)
-//    skipUpgrade:     boolean -- skip running `cosa kola --upgrades`
-//    build:           string  -- cosa build ID to target
-//    platformArgs:    string  -- platform-specific kola args (e.g. '-p aws --aws-ami ...`)
-//    extraArgs:       string  -- additional kola args for `kola run` (e.g. `ext.*`)
-//    basicScenarios   boolean -- run basic qemu scenarios
+//    addExtTests:       []string -- list of test paths to run
+//    cosaDir:           string   -- cosa working directory
+//    parallel:          integer  -- number of tests to run in parallel (default: 8)
+//    skipBasicScenarios boolean  -- skip basic qemu scenarios
+//    skipUpgrade:       boolean  -- skip running `cosa kola --upgrades`
+//    build:             string   -- cosa build ID to target
+//    platformArgs:      string   -- platform-specific kola args (e.g. '-p aws --aws-ami ...`)
+//    extraArgs:         string   -- additional kola args for `kola run` (e.g. `ext.*`)
 def call(params = [:]) {
     def cosaDir = utils.getCosaDir(params)
 
@@ -46,7 +46,7 @@ def call(params = [:]) {
         }
 
         try {
-            if (params['basicScenarios']) {
+            if (!params['skipBasicScenarios']) {
                 shwrap("cd ${cosaDir} && cosa kola run --basic-qemu-scenarios")
             }
             shwrap("cd ${cosaDir} && cosa kola run --build=${buildID} ${arch} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")

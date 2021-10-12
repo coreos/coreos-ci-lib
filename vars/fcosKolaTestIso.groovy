@@ -36,6 +36,7 @@ def call(params = [:]) {
             }
         } finally {
             shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-metal/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-metal.tar.xz")
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso-metal.tar.xz'
         }
     }
     if (!params['skipMetal4k']) {
@@ -48,6 +49,7 @@ def call(params = [:]) {
                 }
             } finally {
                 shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-metal4k/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-metal4k.tar.xz")
+                archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso-metal4k.tar.xz'
             }
         }
     }
@@ -57,6 +59,7 @@ def call(params = [:]) {
                 shwrap("cd ${cosaDir} && kola testiso -S --qemu-multipath ${extraArgsMultipath} --scenarios ${scenariosMultipath} --output-dir tmp/kola-testiso-multipath")
             } finally {
                 shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-multipath/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-multipath.tar.xz")
+                archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso-multipath.tar.xz'
             }
         }
     }
@@ -67,11 +70,12 @@ def call(params = [:]) {
                 shwrap("cd ${cosaDir} && kola testiso -S --qemu-firmware=uefi-secure ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir tmp/kola-testiso-uefi-secure")
             } finally {
                 shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-uefi/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-uefi.tar.xz")
+                archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso-uefi.tar.xz'
                 shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-uefi-secure/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-uefi-secure.tar.xz")
+                archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso-uefi-secure.tar.xz'
             }
         }
     }
-    archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso*.tar.xz'
 
     stage("Test Live Images") {
         parallel(testIsoRuns1)

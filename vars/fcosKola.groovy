@@ -8,6 +8,7 @@
 //    build:             string   -- cosa build ID to target
 //    platformArgs:      string   -- platform-specific kola args (e.g. '-p aws --aws-ami ...`)
 //    extraArgs:         string   -- additional kola args for `kola run` (e.g. `ext.*`)
+//    leakOnFail:        string   -- enable KOLA_LEAK_ON_FAIL using provided SSH pubkey; for debugging only
 def call(params = [:]) {
     def cosaDir = utils.getCosaDir(params)
 
@@ -45,11 +46,17 @@ def call(params = [:]) {
             args += " --exttest ${env.WORKSPACE}/${path}"
         }
 
+        def leakOnFail = params.get('leakOnFail', "")
+        def leakOnFailVar = ""
+        if (leakOnFail != "") {
+            shwrap("echo ${leakOnFail} > leak.pub")
+            leakOnFailVar = "KOLA_LEAK_ON_FAIL=${env.WORKSPACE}/leak.pub"
+        }
         try {
             if (!params['skipBasicScenarios']) {
-                shwrap("cd ${cosaDir} && cosa kola run --basic-qemu-scenarios")
+                shwrap("cd ${cosaDir} && ${leakOnFailVar} cosa kola run --basic-qemu-scenarios")
             }
-            shwrap("cd ${cosaDir} && cosa kola run --build=${buildID} ${arch} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
+            shwrap("cd ${cosaDir} && ${leakOnFailVar} cosa kola run --build=${buildID} ${arch} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
         } finally {
             shwrap("tar -c -C ${cosaDir}/tmp kola | xz -c9 > ${env.WORKSPACE}/kola.tar.xz")
             archiveArtifacts allowEmptyArchive: true, artifacts: 'kola.tar.xz'
@@ -60,7 +67,7 @@ def call(params = [:]) {
     if (!params["skipUpgrade"]) {
         kolaRuns['run_upgrades'] = {
             try {
-                shwrap("cd ${cosaDir} && cosa kola --upgrades --build=${buildID} ${arch} ${platformArgs}")
+                shwrap("cd ${cosaDir} && ${leakOnFailVar} cosa kola --upgrades --build=${buildID} ${arch} ${platformArgs}")
             } finally {
                 shwrap("tar -c -C ${cosaDir}/tmp kola-upgrade | xz -c9 > ${env.WORKSPACE}/kola-upgrade.tar.xz")
                 archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-upgrade.tar.xz'

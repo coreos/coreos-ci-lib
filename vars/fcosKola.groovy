@@ -8,6 +8,7 @@
 //    build:             string   -- cosa build ID to target
 //    platformArgs:      string   -- platform-specific kola args (e.g. '-p aws --aws-ami ...`)
 //    extraArgs:         string   -- additional kola args for `kola run` (e.g. `ext.*`)
+//    disableRerun:      boolean  -- disable reruns of failed tests
 def call(params = [:]) {
     def cosaDir = utils.getCosaDir(params)
 
@@ -15,6 +16,10 @@ def call(params = [:]) {
     def platformArgs = params.get('platformArgs', "");
     def buildID = params.get('build', "latest");
     def arch = params.get('arch', "");
+    def rerun = "--rerun"
+    if (params.get('disableRerun', false)) {
+        rerun = ""
+    }
     if (arch != "") {
         arch = "--arch=${arch}"
     }
@@ -47,9 +52,9 @@ def call(params = [:]) {
 
         try {
             if (!params['skipBasicScenarios']) {
-                shwrap("cd ${cosaDir} && cosa kola run --basic-qemu-scenarios")
+                shwrap("cd ${cosaDir} && cosa kola run ${rerun} --basic-qemu-scenarios")
             }
-            shwrap("cd ${cosaDir} && cosa kola run --build=${buildID} ${arch} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
+            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --build=${buildID} ${arch} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
         } finally {
             shwrap("tar -c -C ${cosaDir}/tmp kola | xz -c9 > ${env.WORKSPACE}/kola.tar.xz")
             archiveArtifacts allowEmptyArchive: true, artifacts: 'kola.tar.xz'
@@ -60,7 +65,7 @@ def call(params = [:]) {
     if (!params["skipUpgrade"]) {
         kolaRuns['run_upgrades'] = {
             try {
-                shwrap("cd ${cosaDir} && cosa kola --upgrades --build=${buildID} ${arch} ${platformArgs}")
+                shwrap("cd ${cosaDir} && cosa kola ${rerun} --upgrades --build=${buildID} ${arch} ${platformArgs}")
             } finally {
                 shwrap("tar -c -C ${cosaDir}/tmp kola-upgrade | xz -c9 > ${env.WORKSPACE}/kola-upgrade.tar.xz")
                 archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-upgrade.tar.xz'

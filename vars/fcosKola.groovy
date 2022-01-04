@@ -28,7 +28,7 @@ def call(params = [:]) {
     // to "closure" which `parallel` will run in parallel. That way, we can
     // conditionally only add the `run_upgrades` stage if not explicitly
     // skipped.
-    kolaRuns = [:]
+    def kolaRuns = [:]
     kolaRuns["run"] = {
         def args = ""
         // Add the tests/kola directory, but only if it's not the same as the

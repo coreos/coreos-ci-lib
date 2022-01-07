@@ -24,6 +24,9 @@ def call(params = [:]) {
         arch = "--arch=${arch}"
     }
 
+    // Create a unique output directory for this run of fcosKola
+    def outputDir = shwrapCapture("mktemp -d ${cosaDir}/tmp/fcosKola-XXXXX")
+
     // This is a bit obscure; what we're doing here is building a map of "name"
     // to "closure" which `parallel` will run in parallel. That way, we can
     // conditionally only add the `run_upgrades` stage if not explicitly
@@ -52,26 +55,26 @@ def call(params = [:]) {
 
         try {
             if (!params['skipBasicScenarios']) {
-                shwrap("cd ${cosaDir} && cosa kola run ${rerun} --basic-qemu-scenarios")
+                shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/kola --basic-qemu-scenarios")
             }
-            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --build=${buildID} ${arch} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
+            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/kola --build=${buildID} ${arch} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
         } finally {
-            shwrap("tar -c -C ${cosaDir}/tmp kola | xz -c9 > ${env.WORKSPACE}/kola.tar.xz")
+            shwrap("tar -c -C ${outputDir} kola | xz -c9 > ${env.WORKSPACE}/kola.tar.xz")
             archiveArtifacts allowEmptyArchive: true, artifacts: 'kola.tar.xz'
         }
         // sanity check kola actually ran and dumped its output in tmp/
-        shwrap("test -d ${cosaDir}/tmp/kola")
+        shwrap("test -d ${outputDir}/kola")
     }
     if (!params["skipUpgrade"]) {
         kolaRuns['run_upgrades'] = {
             try {
-                shwrap("cd ${cosaDir} && cosa kola ${rerun} --upgrades --build=${buildID} ${arch} ${platformArgs}")
+                shwrap("cd ${cosaDir} && cosa kola ${rerun} --output-dir=${outputDir}/kola-upgrade --upgrades --build=${buildID} ${arch} ${platformArgs}")
             } finally {
-                shwrap("tar -c -C ${cosaDir}/tmp kola-upgrade | xz -c9 > ${env.WORKSPACE}/kola-upgrade.tar.xz")
+                shwrap("tar -c -C ${outputDir} kola-upgrade | xz -c9 > ${env.WORKSPACE}/kola-upgrade.tar.xz")
                 archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-upgrade.tar.xz'
             }
             // sanity check kola actually ran and dumped its output in tmp/
-            shwrap("test -d ${cosaDir}/tmp/kola-upgrade")
+            shwrap("test -d ${outputDir}/kola-upgrade")
         }
     }
 

@@ -9,6 +9,7 @@
 //    platformArgs:      string   -- platform-specific kola args (e.g. '-p aws --aws-ami ...`)
 //    extraArgs:         string   -- additional kola args for `kola run` (e.g. `ext.*`)
 //    disableRerun:      boolean  -- disable reruns of failed tests
+//    marker:            string   -- some identifying text to add to uploaded artifact filenames
 def call(params = [:]) {
     def cosaDir = utils.getCosaDir(params)
 
@@ -16,6 +17,7 @@ def call(params = [:]) {
     def platformArgs = params.get('platformArgs', "");
     def buildID = params.get('build', "latest");
     def arch = params.get('arch', "");
+    def marker = params.get('marker', "kola");
     def rerun = "--rerun"
     if (params.get('disableRerun', false)) {
         rerun = ""
@@ -23,6 +25,10 @@ def call(params = [:]) {
     if (arch != "") {
         arch = "--arch=${arch}"
     }
+
+    // Define a unique token to be added to the file name uploads
+    // Prevents multiple runs overwriting same filename in archiveArtifacts
+    def token = shwrapCapture("uuidgen | cut -f1 -d-")
 
     // Create a unique output directory for this run of fcosKola
     def outputDir = shwrapCapture("mktemp -d ${cosaDir}/tmp/fcosKola-XXXXX")
@@ -59,8 +65,8 @@ def call(params = [:]) {
             }
             shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/kola --build=${buildID} ${arch} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
         } finally {
-            shwrap("tar -c -C ${outputDir} kola | xz -c9 > ${env.WORKSPACE}/kola.tar.xz")
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'kola.tar.xz'
+            shwrap("tar -c -C ${outputDir} kola | xz -c9 > ${env.WORKSPACE}/${marker}-${token}.tar.xz")
+            archiveArtifacts allowEmptyArchive: true, artifacts: "${marker}-${token}.tar.xz"
         }
         // sanity check kola actually ran and dumped its output in tmp/
         shwrap("test -d ${outputDir}/kola")
@@ -70,8 +76,8 @@ def call(params = [:]) {
             try {
                 shwrap("cd ${cosaDir} && cosa kola ${rerun} --output-dir=${outputDir}/kola-upgrade --upgrades --build=${buildID} ${arch} ${platformArgs}")
             } finally {
-                shwrap("tar -c -C ${outputDir} kola-upgrade | xz -c9 > ${env.WORKSPACE}/kola-upgrade.tar.xz")
-                archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-upgrade.tar.xz'
+                shwrap("tar -c -C ${outputDir} kola-upgrade | xz -c9 > ${env.WORKSPACE}/${marker}-upgrade-${token}.tar.xz")
+                archiveArtifacts allowEmptyArchive: true, artifacts: "${marker}-upgrade-${token}.tar.xz"
             }
             // sanity check kola actually ran and dumped its output in tmp/
             shwrap("test -d ${outputDir}/kola-upgrade")

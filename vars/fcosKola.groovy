@@ -76,6 +76,10 @@ def call(params = [:]) {
     }
 
     stage('Kola') {
-        parallel(kolaRuns)
+        if (kolaRuns.size() == 1) {
+            kolaRuns.each { it -> it.value() }
+        } else {
+            parallel(kolaRuns)
+        }
     }
 }

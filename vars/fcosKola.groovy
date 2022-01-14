@@ -49,7 +49,12 @@ def call(params = [:]) {
             test "\$configorigin" != "\$gitorigin"
         """) == 0)
         {
-            args += "--exttest ${env.WORKSPACE}"
+            // The workspace name created by Jenkins is messy and dynamic, but
+            // kola uses it to derive the test name. Let's fix it by using a
+            // symlinked dir.
+            def name = shwrapCapture("basename \$(git config --get remote.origin.url) .git")
+            shwrap("mkdir -p /var/tmp/kola && ln -s ${env.WORKSPACE} /var/tmp/kola/${name}")
+            args += "--exttest /var/tmp/kola/${name}"
         }
         def parallel = params.get('parallel', 8);
         def extraArgs = params.get('extraArgs', "");

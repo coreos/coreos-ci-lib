@@ -34,6 +34,7 @@ def call(params = [:]) {
             } else {
                 shwrap("cd ${cosaDir}  && kola testiso -S ${extraArgs} --output-dir tmp/kola-testiso-metal")
             }
+            shwrap("cd ${cosaDir}  && kola testiso -S --add-nm-keyfile --scenarios iso-install --output-dir tmp/kola-testiso-metal")
         } finally {
             shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-metal/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-metal.tar.xz")
             archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso-metal.tar.xz'
@@ -47,6 +48,7 @@ def call(params = [:]) {
                 } else {
                     shwrap("cd ${cosaDir} &&  kola testiso -S --qemu-native-4k ${extraArgs4k} --output-dir tmp/kola-testiso-metal4k")
                 }
+                shwrap("cd ${cosaDir}  && kola testiso -S --qemu-native-4k --add-nm-keyfile --scenarios iso-install --output-dir tmp/kola-testiso-metal4k")
             } finally {
                 shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-metal4k/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-metal4k.tar.xz")
                 archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso-metal4k.tar.xz'

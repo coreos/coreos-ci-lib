@@ -87,6 +87,7 @@ def startMinio(params =[:]) {
 def _runGangplank(gangplankCmd) {
     try {
         shwrap("${gangplankCmd}")
+        echo "Gangplank command finished successfully!"
     } catch (Exception e) {
         print(e)
         currentBuild.result = 'ABORTED'

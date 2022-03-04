@@ -15,12 +15,14 @@ def call(params = [:], Closure body) {
     def podObj = readJSON text: podJSON
     podObj['spec']['containers'][0]['image'] = params['image']
 
-    if (params['serviceAccount'] != null) {
-        podObj['spec']['serviceAccount'] = params['serviceAccount']
-    }
-
     if (params['runAsUser'] != null) {
         podObj['spec']['containers'][0]['securityContext'] = [runAsUser: params['runAsUser']]
+        // https://pagure.io/fedora-infra/ansible/blob/9244b4c12256/f/roles/openshift-apps/coreos-ci/defaults/main.yaml#_3
+        podObj['spec']['serviceAccount'] = 'coreos-ci-sa'
+    }
+
+    if (params['serviceAccount'] != null) {
+        podObj['spec']['serviceAccount'] = params['serviceAccount']
     }
 
     // initialize some maps/lists to make it easier to populate later on

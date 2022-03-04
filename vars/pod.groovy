@@ -13,16 +13,17 @@
 def call(params = [:], Closure body) {
     def podJSON = libraryResource 'com/github/coreos/pod.json'
     def podObj = readJSON text: podJSON
+    def serviceAccount = 'default'
     podObj['spec']['containers'][0]['image'] = params['image']
 
     if (params['runAsUser'] != null) {
         podObj['spec']['containers'][0]['securityContext'] = [runAsUser: params['runAsUser']]
         // https://pagure.io/fedora-infra/ansible/blob/9244b4c12256/f/roles/openshift-apps/coreos-ci/defaults/main.yaml#_3
-        podObj['spec']['serviceAccountName'] = 'coreos-ci-sa'
+        serviceAccount = 'coreos-ci-sa'
     }
 
     if (params['serviceAccount'] != null) {
-        podObj['spec']['serviceAccountName'] = params['serviceAccount']
+        serviceAccount = params['serviceAccount']
     }
 
     // initialize some maps/lists to make it easier to populate later on
@@ -93,7 +94,7 @@ def call(params = [:], Closure body) {
         podYAML = readFile(file: "${label}.yaml")
     }
 
-    podTemplate(cloud: 'openshift', yaml: podYAML, label: label, slaveConnectTimeout: 300) {
+    podTemplate(cloud: 'openshift', yaml: podYAML, serviceAccount: serviceAccount, label: label, slaveConnectTimeout: 300) {
         node(label) { container('worker') {
             body()
         }}

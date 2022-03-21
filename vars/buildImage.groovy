@@ -62,6 +62,8 @@ def call(params = [:]) {
                 params['env'].each{ name, val ->
                     bcObj['objects'][1]['spec']['strategy']['dockerStrategy']['env'] += ['name': name, 'value': val]
                 }
+                // initialize so we can populate it more easily
+                bcObj['objects'][1]['spec']['resources'] = [requests: [:], limits: [:]]
                 if (params['memory']) {
                     bcObj['objects'][1]['spec']['resources']['requests']['memory'] = params['memory'].toString()
                 }

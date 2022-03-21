@@ -3,6 +3,8 @@
 //    dockerFile    string -- DockerFile used for the buildconfig
 //    workspace     string -- Path for local source dir used for `--from-dir=`
 //    env           dict -- Additional environment variables to set during build
+//    memory        amount of RAM to request
+//    cpu           amount of CPU to request
 def call(params = [:]) {
     def imageName
     def bcObj
@@ -56,9 +58,18 @@ def call(params = [:]) {
                 if (params['dockerFile']) {
                     bcObj['parameters'][1] +=['name': 'DOCKERFILE', 'value': "${params['dockerFile']}".toString()]
                 }
+                // these should check 'kind' instead of hardcoding 1
                 params['env'].each{ name, val ->
-                    // should check 'kind' instead
                     bcObj['objects'][1]['spec']['strategy']['dockerStrategy']['env'] += ['name': name, 'value': val]
+                }
+                if (params['memory']) {
+                    bcObj['objects'][1]['spec']['resources']['requests']['memory'] = params['memory'].toString()
+                }
+                if (params['cpu']) {
+                    bcObj['objects'][1]['spec']['resources']['requests']['cpu'] = params['cpu'].toString()
+                    // Also propagate CPU count to NCPUS, because it can be hard in a Kubernetes environment
+                    // to determine how much CPU one should really use.
+                    bcObj['objects'][1]['spec']['strategy']['dockerStrategy']['env'] += ['name': 'NCPUS', 'value': params['cpu'].toString()]
                 }
             }
             stage('Create BuildConfig') {

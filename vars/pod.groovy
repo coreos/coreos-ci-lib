@@ -33,12 +33,20 @@ def call(params = [:], Closure body) {
     if (params['memory']) {
         podObj['spec']['containers'][0]['resources']['requests']['memory'] = params['memory'].toString()
     }
-    if (params['cpu']) {
-        podObj['spec']['containers'][0]['resources']['requests']['cpu'] = params['cpu'].toString()
-        // Also propagate CPU count to NCPUS, because it can be hard in a Kubernetes environment
-        // to determine how much CPU one should really use.
-        podObj['spec']['containers'][0]['env'] += ['name': 'NCPUS', 'value': params['cpu'].toString()]
+    // just default to 2 cpu-equivalent if unspecified
+    if (params['cpu'] == null) {
+        params['cpu'] = "2"
     }
+
+    // note we set *both* the request and limit here; the limit is what
+    // actually affects cgroups scheduling
+    podObj['spec']['containers'][0]['resources']['requests']['cpu'] = params['cpu'].toString()
+    podObj['spec']['containers'][0]['resources']['limits']['cpu'] = params['cpu'].toString()
+
+    // Also propagate CPU count to NCPUS, because it can be hard in a Kubernetes environment
+    // to determine how much CPU one should really use.
+    podObj['spec']['containers'][0]['env'] += ['name': 'NCPUS', 'value': params['cpu'].toString()]
+
     if (params['kvm']) {
         podObj['spec']['containers'][0]['resources']['requests']['devices.kubevirt.io/kvm'] = "1"
         podObj['spec']['containers'][0]['resources']['limits']['devices.kubevirt.io/kvm'] = "1"

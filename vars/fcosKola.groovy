@@ -2,7 +2,7 @@
 // Available parameters:
 //    addExtTests:       []string -- list of test paths to run
 //    cosaDir:           string   -- cosa working directory
-//    parallel:          integer  -- number of tests to run in parallel (default: 8)
+//    parallel:          integer  -- number of tests to run in parallel (default: # CPUs)
 //    skipBasicScenarios boolean  -- skip basic qemu scenarios
 //    skipUpgrade:       boolean  -- skip running `cosa kola --upgrades`
 //    build:             string   -- cosa build ID to target
@@ -56,7 +56,7 @@ def call(params = [:]) {
             shwrap("mkdir -p /var/tmp/kola && ln -s ${env.WORKSPACE} /var/tmp/kola/${name}")
             args += "--exttest /var/tmp/kola/${name}"
         }
-        def parallel = params.get('parallel', 8);
+        def parallel = params.get('parallel', "auto");
         def extraArgs = params.get('extraArgs', "");
         def addExtTests = params.get('addExtTests', [])
 

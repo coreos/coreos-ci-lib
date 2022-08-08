@@ -3,7 +3,7 @@
 //   image: string
 def call(params = [:], Closure body) {
     if (params['image'] == null) {
-        params['image'] = 'registry.ci.openshift.org/coreos/coreos-assembler:latest'
+        params['image'] = 'quay.io/coreos-assembler/coreos-assembler:main'
     }
 
     // default to enabling KVM

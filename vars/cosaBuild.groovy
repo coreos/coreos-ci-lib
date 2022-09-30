@@ -1,4 +1,4 @@
-// Build FCOS, possibly with modifications.
+// Build CoreOS, possibly with modifications.
 // Available parameters:
 //    cosaDir:        string   -- Cosa working directory
 //    extraArgs:      string   -- Extra arguments to pass to `cosa build`
@@ -12,7 +12,7 @@
 //    skipInit:       boolean  -- Assume `cosa init` has already been run
 //    skipKola:       boolean  -- Do not automatically run kola on resulting build
 def call(params = [:]) {
-    stage("Build FCOS") {
+    stage("Build") {
         def cosaDir = utils.getCosaDir(params)
         def extraFetchArgs = params.get('extraFetchArgs', "");
         def extraArgs = params.get('extraArgs', "");
@@ -54,7 +54,7 @@ def call(params = [:]) {
     }
 
     if (!params['skipKola']) {
-        fcosKola()
+        kola()
     }
 }
 

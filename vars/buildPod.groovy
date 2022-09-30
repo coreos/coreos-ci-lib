@@ -1,4 +1,4 @@
-// buildPod is a thin wrapper around pod() which fills in the FCOS buildroot images.
+// buildPod is a thin wrapper around pod() which fills in the CoreOS buildroot images.
 // Additional available parameters:
 //   image: string
 //   buildroot: bool

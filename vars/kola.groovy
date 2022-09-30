@@ -30,8 +30,8 @@ def call(params = [:]) {
     // Prevents multiple runs overwriting same filename in archiveArtifacts
     def token = shwrapCapture("uuidgen | cut -f1 -d-")
 
-    // Create a unique output directory for this run of fcosKola
-    def outputDir = shwrapCapture("mktemp -d ${cosaDir}/tmp/fcosKola-XXXXX")
+    // Create a unique output directory for this run of kola
+    def outputDir = shwrapCapture("mktemp -d ${cosaDir}/tmp/kola-XXXXX")
 
     // This is a bit obscure; what we're doing here is building a map of "name"
     // to "closure" which `parallel` will run in parallel. That way, we can

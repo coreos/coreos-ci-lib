@@ -17,7 +17,7 @@ objects:
       spec:
         containers:
         - name: "${NAME}"
-          image: registry.fedoraproject.org/fedora:34
+          image: registry.fedoraproject.org/fedora-minimal:latest
           command:
           - sleep
           - 24h

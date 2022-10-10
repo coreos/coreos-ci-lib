@@ -32,6 +32,7 @@ def call(params = [:], Closure body) {
 
     if (params['memory']) {
         podObj['spec']['containers'][0]['resources']['requests']['memory'] = params['memory'].toString()
+        podObj['spec']['containers'][0]['resources']['limits']['memory'] = params['memory'].toString()
     }
     // just default to 2 cpu-equivalent if unspecified
     if (params['cpu'] == null) {

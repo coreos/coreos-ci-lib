@@ -33,6 +33,9 @@ def call(params = [:]) {
     // Create a unique output directory for this run of kola
     def outputDir = shwrapCapture("mktemp -d ${cosaDir}/tmp/kola-XXXXX")
 
+    // list of identifiers for each run for log collection
+    def ids = []
+
     // This is a bit obscure; what we're doing here is building a map of "name"
     // to "closure" which `parallel` will run in parallel. That way, we can
     // conditionally only add the `run_upgrades` stage if not explicitly
@@ -40,6 +43,7 @@ def call(params = [:]) {
     def kolaRuns = [:]
     kolaRuns["run"] = {
         def args = ""
+        def id
         // Add the tests/kola directory, but only if it's not the same as the
         // src/config repo which is also automatically added.
         if (shwrapRc("""
@@ -64,42 +68,46 @@ def call(params = [:]) {
             args += " --exttest ${env.WORKSPACE}/${path}"
         }
 
-        try {
-            if (!params['skipBasicScenarios']) {
-                shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/kola --basic-qemu-scenarios")
-            }
-            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/kola --build=${buildID} ${arch} ${platformArgs} --tag '!reprovision' --parallel ${parallel} ${args} ${extraArgs}")
-        } finally {
-            shwrap("tar -c -C ${outputDir} kola | xz -c9 > ${env.WORKSPACE}/${marker}-${token}.tar.xz")
-            archiveArtifacts allowEmptyArchive: true, artifacts: "${marker}-${token}.tar.xz"
+        // basic run
+        if (!params['skipBasicScenarios']) {
+            id = marker == "" ? "kola-basic" : "kola-basic-${marker}"
+            ids += id
+            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --basic-qemu-scenarios")
         }
-        try {
-            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/kola-reprovision --build=${buildID} ${arch} ${platformArgs} --tag reprovision ${args} ${extraArgs}")
-        } finally {
-            shwrap("tar -c -C ${outputDir} kola-reprovision | xz -c9 > ${env.WORKSPACE}/${marker}-reprovision-${token}.tar.xz")
-            archiveArtifacts allowEmptyArchive: true, artifacts: "${marker}-reprovision-${token}.tar.xz"
-        }
-        // sanity check kola actually ran and dumped its output in tmp/
-        shwrap("test -d ${outputDir}/kola")
+        // normal run (without reprovision tests because those require a lot of memory)
+        id = marker == "" ? "kola" : "kola-${marker}"
+        ids += id
+        shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${arch} ${platformArgs} --tag '!reprovision' --parallel ${parallel} ${args} ${extraArgs}")
+
+        // re-provision tests (not run with --parallel argument to kola)
+        id = marker == "" ? "kola-reprovision" : "kola-reprovision-${marker}"
+        ids += id
+        shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${arch} ${platformArgs} --tag reprovision ${args} ${extraArgs}")
     }
+
     if (!params["skipUpgrade"]) {
         kolaRuns['run_upgrades'] = {
-            try {
-                shwrap("cd ${cosaDir} && cosa kola ${rerun} --output-dir=${outputDir}/kola-upgrade --upgrades --build=${buildID} ${arch} ${platformArgs}")
-            } finally {
-                shwrap("tar -c -C ${outputDir} kola-upgrade | xz -c9 > ${env.WORKSPACE}/${marker}-upgrade-${token}.tar.xz")
-                archiveArtifacts allowEmptyArchive: true, artifacts: "${marker}-upgrade-${token}.tar.xz"
-            }
-            // sanity check kola actually ran and dumped its output in tmp/
-            shwrap("test -d ${outputDir}/kola-upgrade")
+            def id = marker == "" ? "kola-upgrade" : "kola-upgrade-${marker}"
+            ids += id
+            shwrap("cd ${cosaDir} && cosa kola ${rerun} --output-dir=${outputDir}/${id} --upgrades --build=${buildID} ${arch} ${platformArgs}")
         }
     }
 
     stage('Kola') {
-        if (kolaRuns.size() == 1) {
-            kolaRuns.each { k, v -> v() }
-        } else {
-            parallel(kolaRuns)
+        try {
+            if (kolaRuns.size() == 1) {
+                kolaRuns.each { k, v -> v() }
+            } else {
+                parallel(kolaRuns)
+            }
+        } finally {
+            for (id in ids) {
+                // sanity check kola actually ran and dumped its output
+                shwrap("test -d ${outputDir}/${id}")
+                // collect the output
+                shwrap("tar -c -C ${outputDir} ${id} | xz -c9 > ${env.WORKSPACE}/${id}-${token}.tar.xz")
+                archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
+            }
         }
     }
 }

@@ -12,6 +12,7 @@
 //     skipMetal4k:        boolean -- skip metal4k image
 //     skipMultipath:      boolean -- skip multipath tests
 //     skipUEFI:           boolean -- skip UEFI tests
+//     marker:             string  -- some identifying text to add to uploaded artifact filenames
 def call(params = [:]) {
     def cosaDir = utils.getCosaDir(params)
     def extraArgs = params.get('extraArgs', "");
@@ -24,49 +25,60 @@ def call(params = [:]) {
     def scenariosMultipath = params.get('scenariosMultipath', "iso-offline-install");
     // by default, only test that we can boot successfully
     def scenariosUEFI = params.get('scenariosUEFI', "iso-live-login,iso-as-disk");
+    def marker = params.get('marker', "");
+
+    // Define a unique token to be added to the file name uploads
+    // Prevents multiple runs overwriting same filename in archiveArtifacts
+    def token = shwrapCapture("uuidgen | cut -f1 -d-")
+
+    // Create a unique output directory for this run of fcosKola
+    def outputDir = shwrapCapture("mktemp -d ${cosaDir}/tmp/kolaTestIso-XXXXX")
 
     testIsoRuns1 = [:]
     testIsoRuns2 = [:]
     testIsoRuns1["metal"] = {
+        def id = marker == "" ? "kola-testiso-metal" : "kola-testiso-metal-${marker}"
         try {
             def scenariosArg = scenarios == "" ? "" : "--scenarios ${scenarios}"
-            shwrap("cd ${cosaDir} && kola testiso -S ${extraArgs} ${scenariosArg} --output-dir tmp/kola-testiso-metal")
+            shwrap("cd ${cosaDir} && kola testiso -S ${extraArgs} ${scenariosArg} --output-dir ${outputDir}/${id}")
         } finally {
-            shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-metal/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-metal.tar.xz")
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso-metal.tar.xz'
+            shwrap("tar -c -C ${outputDir} ${id} | xz -c9 > ${env.WORKSPACE}/${id}-${token}.tar.xz")
+            archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
         }
     }
     if (!params['skipMetal4k']) {
         testIsoRuns1["metal4k"] = {
+            def id = marker == "" ? "kola-testiso-metal4k" : "kola-testiso-metal4k-${marker}"
             try {
                 def scenariosArg = scenarios4k == "" ? "" : "--scenarios ${scenarios4k}"
-                shwrap("cd ${cosaDir} && kola testiso -S --qemu-native-4k ${extraArgs4k} ${scenariosArg} --output-dir tmp/kola-testiso-metal4k")
+                shwrap("cd ${cosaDir} && kola testiso -S --qemu-native-4k ${extraArgs4k} ${scenariosArg} --output-dir ${outputDir}/${id}")
             } finally {
-                shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-metal4k/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-metal4k.tar.xz")
-                archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso-metal4k.tar.xz'
+                shwrap("tar -c -C ${outputDir} ${id} | xz -c9 > ${env.WORKSPACE}/${id}-${token}.tar.xz")
+                archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
             }
         }
     }
     if (!params['skipMultipath']) {
         testIsoRuns2["multipath"] = {
+            def id = marker == "" ? "kola-testiso-multipath" : "kola-testiso-multipath-${marker}"
             try {
-                shwrap("cd ${cosaDir} && kola testiso -S --qemu-multipath ${extraArgsMultipath} --scenarios ${scenariosMultipath} --output-dir tmp/kola-testiso-multipath")
+                shwrap("cd ${cosaDir} && kola testiso -S --qemu-multipath ${extraArgsMultipath} --scenarios ${scenariosMultipath} --output-dir ${outputDir}/${id}")
             } finally {
-                shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-multipath/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-multipath.tar.xz")
-                archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso-multipath.tar.xz'
+                shwrap("tar -c -C ${outputDir} ${id} | xz -c9 > ${env.WORKSPACE}/${id}-${token}.tar.xz")
+                archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
             }
         }
     }
     if (!params['skipUEFI']) {
         testIsoRuns2["metalUEFI"] = {
+            def id = marker == "" ? "kola-testiso-uefi" : "kola-testiso-uefi-${marker}"
             try {
-                shwrap("cd ${cosaDir} && kola testiso -S --qemu-firmware=uefi ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir tmp/kola-testiso-uefi")
-                shwrap("cd ${cosaDir} && kola testiso -S --qemu-firmware=uefi-secure ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir tmp/kola-testiso-uefi-secure")
+                shwrap("mkdir -p ${outputDir}/${id}")
+                shwrap("cd ${cosaDir} && kola testiso -S --qemu-firmware=uefi ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir ${outputDir}/${id}/insecure")
+                shwrap("cd ${cosaDir} && kola testiso -S --qemu-firmware=uefi-secure ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir ${outputDir}/${id}/secure")
             } finally {
-                shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-uefi/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-uefi.tar.xz")
-                archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso-uefi.tar.xz'
-                shwrap("cd ${cosaDir} && tar -cf - tmp/kola-testiso-uefi-secure/ | xz -c9 > ${env.WORKSPACE}/kola-testiso-uefi-secure.tar.xz")
-                archiveArtifacts allowEmptyArchive: true, artifacts: 'kola-testiso-uefi-secure.tar.xz'
+                shwrap("tar -c -C ${outputDir} ${id} | xz -c9 > ${env.WORKSPACE}/${id}-${token}.tar.xz")
+                archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
             }
         }
     }

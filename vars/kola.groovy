@@ -68,10 +68,16 @@ def call(params = [:]) {
             if (!params['skipBasicScenarios']) {
                 shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/kola --basic-qemu-scenarios")
             }
-            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/kola --build=${buildID} ${arch} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
+            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/kola --build=${buildID} ${arch} ${platformArgs} --tag '!reprovision' --parallel ${parallel} ${args} ${extraArgs}")
         } finally {
             shwrap("tar -c -C ${outputDir} kola | xz -c9 > ${env.WORKSPACE}/${marker}-${token}.tar.xz")
             archiveArtifacts allowEmptyArchive: true, artifacts: "${marker}-${token}.tar.xz"
+        }
+        try {
+            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/kola-reprovision --build=${buildID} ${arch} ${platformArgs} --tag reprovision ${args} ${extraArgs}")
+        } finally {
+            shwrap("tar -c -C ${outputDir} kola-reprovision | xz -c9 > ${env.WORKSPACE}/${marker}-reprovision-${token}.tar.xz")
+            archiveArtifacts allowEmptyArchive: true, artifacts: "${marker}-reprovision-${token}.tar.xz"
         }
         // sanity check kola actually ran and dumped its output in tmp/
         shwrap("test -d ${outputDir}/kola")

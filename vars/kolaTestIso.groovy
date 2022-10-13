@@ -41,7 +41,7 @@ def call(params = [:]) {
 
     testIsoRuns1 = [:]
     testIsoRuns2 = [:]
-    testIsoRuns1["metal"] = {
+    testIsoRuns1["${arch}:kola:metal"] = {
         def id = marker == "" ? "kola-testiso-metal" : "kola-testiso-metal-${marker}"
         ids += id
         def scenariosArg = scenarios == "" ? "" : "--scenarios ${scenarios}"
@@ -52,7 +52,7 @@ def call(params = [:]) {
         // https://github.com/coreos/fedora-coreos-tracker/issues/1261
         // and testiso for s390x doesn't support iso installs either
         if (arch != 's390x') {
-            testIsoRuns1["metal4k"] = {
+            testIsoRuns1["${arch}:kola:metal4k"] = {
                 def id = marker == "" ? "kola-testiso-metal4k" : "kola-testiso-metal4k-${marker}"
                 ids += id
                 def scenariosArg = scenarios4k == "" ? "" : "--scenarios ${scenarios4k}"
@@ -61,7 +61,7 @@ def call(params = [:]) {
         }
     }
     if (!params['skipMultipath']) {
-        testIsoRuns2["multipath"] = {
+        testIsoRuns2["${arch}:kola:multipath"] = {
             def id = marker == "" ? "kola-testiso-multipath" : "kola-testiso-multipath-${marker}"
             ids += id
             shwrap("cosa kola testiso -S --qemu-multipath ${extraArgsMultipath} --scenarios ${scenariosMultipath} --output-dir ${outputDir}/${id}")
@@ -74,7 +74,7 @@ def call(params = [:]) {
         // https://pagure.io/fedora-infrastructure/issue/7361
         // https://github.com/coreos/coreos-assembler/blob/93efb63dcbd63dc04a782e2c6c617ae0cd4a51c8/mantle/platform/qemu.go#L1156
         if (arch == 'x86_64') {
-            testIsoRuns2["metalUEFI"] = {
+            testIsoRuns2["${arch}:kola:uefi"] = {
                 def id = marker == "" ? "kola-testiso-uefi" : "kola-testiso-uefi-${marker}"
                 ids += id
                 shwrap("cosa shell -- mkdir -p ${outputDir}/${id}")

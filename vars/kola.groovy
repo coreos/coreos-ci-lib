@@ -74,21 +74,36 @@ def call(params = [:]) {
             args += " --exttest ${env.WORKSPACE}/${path}"
         }
 
-        // basic run
-        if (!params['skipBasicScenarios']) {
-            id = marker == "" ? "kola-basic" : "kola-basic-${marker}"
+        if (platformArgs != "" || extraArgs != "") {
+            // There are two cases where we land here:
+            //   1. The user passed `platformArgs`, which implies we're
+            //      running cloud platform (non qemu) tests and don't need to
+            //      worry about basic-qemu-scenarios or resource usage so we
+            //      don't need to run reprovision tests separately.
+            //   2. The user passed `extraArgs`. In that case they want more
+            //      control over the kola run that might conflict with
+            //      the --tag arguments we provide below. Let's just
+            //      do a single run in that case.
+            id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --basic-qemu-scenarios")
-        }
-        // normal run (without reprovision tests because those require a lot of memory)
-        id = marker == "" ? "kola" : "kola-${marker}"
-        ids += id
-        shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag '!reprovision' --parallel ${parallel} ${args} ${extraArgs}")
+            shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
+        } else {
+            // basic run
+            if (!params['skipBasicScenarios']) {
+                id = marker == "" ? "kola-basic" : "kola-basic-${marker}"
+                ids += id
+                shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --basic-qemu-scenarios")
+            }
+            // normal run (without reprovision tests because those require a lot of memory)
+            id = marker == "" ? "kola" : "kola-${marker}"
+            ids += id
+            shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag '!reprovision' --parallel ${parallel} ${args}")
 
-        // re-provision tests (not run with --parallel argument to kola)
-        id = marker == "" ? "kola-reprovision" : "kola-reprovision-${marker}"
-        ids += id
-        shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag reprovision ${args} ${extraArgs}")
+            // re-provision tests (not run with --parallel argument to kola)
+            id = marker == "" ? "kola-reprovision" : "kola-reprovision-${marker}"
+            ids += id
+            shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag reprovision ${args}")
+        }
     }
 
     if (!params["skipUpgrade"]) {

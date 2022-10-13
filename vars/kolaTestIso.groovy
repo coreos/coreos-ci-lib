@@ -91,7 +91,7 @@ def call(params = [:]) {
             parallel(testIsoRuns2)
         } finally {
             for (id in ids) {
-                shwrap("cosa shell -- tar -c --xz ${outputDir}/${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz")
+                shwrap("cosa shell -- tar -c --xz ${outputDir}/${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
                 archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
             }
         }

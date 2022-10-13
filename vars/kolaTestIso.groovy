@@ -84,16 +84,15 @@ def call(params = [:]) {
         }
     }
 
-    stage("Test Live Images") {
-        dir(cosaDir) {
-            try {
-                parallel(testIsoRuns1)
-                parallel(testIsoRuns2)
-            } finally {
-                for (id in ids) {
-                    shwrap("cosa shell -- tar -c --xz ${outputDir}/${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz")
-                    archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
-                }
+    // Run the Kola tests from the cosaDir
+    dir(cosaDir) {
+        try {
+            parallel(testIsoRuns1)
+            parallel(testIsoRuns2)
+        } finally {
+            for (id in ids) {
+                shwrap("cosa shell -- tar -c --xz ${outputDir}/${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz")
+                archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
             }
         }
     }

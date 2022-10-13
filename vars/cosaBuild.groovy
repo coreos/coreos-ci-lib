@@ -19,14 +19,6 @@ def call(params = [:]) {
 
         shwrap("mkdir -p ${cosaDir}")
 
-        // if the cosa dir is the default, also add a symlink from /srv/fcos
-        // for backwards compatibility
-        shwrap("""
-            if [ ${cosaDir} = /srv/coreos ]; then
-                ln -s coreos /srv/fcos
-            fi
-        """)
-
         if (!params['skipInit']) {
             def branchArg = ""
             if (params['gitBranch']) {

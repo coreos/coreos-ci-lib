@@ -1,1 +1,0 @@
-kolaTestIso.groovy

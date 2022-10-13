@@ -41,7 +41,7 @@ def call(params = [:]) {
     // conditionally only add the `run_upgrades` stage if not explicitly
     // skipped.
     def kolaRuns = [:]
-    kolaRuns["run"] = {
+    kolaRuns["${arch}:kola"] = {
         def args = ""
         def id
         // Add the tests/kola directory, but only if it's not the same as the
@@ -108,7 +108,7 @@ def call(params = [:]) {
     }
 
     if (!params["skipUpgrade"]) {
-        kolaRuns['run_upgrades'] = {
+        kolaRuns["${arch}:kola:upgrade"] = {
             // If upgrades are broken `cosa kola --upgrades` might
             // fail to even find the previous image so we wrap this
             // in a try/catch so allowUpgradeFail can work.

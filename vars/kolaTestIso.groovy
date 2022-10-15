@@ -39,9 +39,8 @@ def call(params = [:]) {
     // list of identifiers for each run for log collection
     def ids = []
 
-    def testIsoRuns1 = [:]
-    def testIsoRuns2 = [:]
-    testIsoRuns1["${arch}:kola:metal"] = {
+    def testIsoRuns = [:]
+    testIsoRuns["${arch}:kola:metal"] = {
         def id = marker == "" ? "kola-testiso-metal" : "kola-testiso-metal-${marker}"
         ids += id
         def scenariosArg = scenarios == "" ? "" : "--scenarios ${scenarios}"
@@ -52,7 +51,7 @@ def call(params = [:]) {
         // https://github.com/coreos/fedora-coreos-tracker/issues/1261
         // and testiso for s390x doesn't support iso installs either
         if (arch != 's390x') {
-            testIsoRuns1["${arch}:kola:metal4k"] = {
+            testIsoRuns["${arch}:kola:metal4k"] = {
                 def id = marker == "" ? "kola-testiso-metal4k" : "kola-testiso-metal4k-${marker}"
                 ids += id
                 def scenariosArg = scenarios4k == "" ? "" : "--scenarios ${scenarios4k}"
@@ -61,7 +60,7 @@ def call(params = [:]) {
         }
     }
     if (!params['skipMultipath']) {
-        testIsoRuns2["${arch}:kola:multipath"] = {
+        testIsoRuns["${arch}:kola:multipath"] = {
             def id = marker == "" ? "kola-testiso-multipath" : "kola-testiso-multipath-${marker}"
             ids += id
             shwrap("cosa kola testiso -S --qemu-multipath ${extraArgsMultipath} --scenarios ${scenariosMultipath} --output-dir ${outputDir}/${id}")
@@ -74,7 +73,7 @@ def call(params = [:]) {
         // https://pagure.io/fedora-infrastructure/issue/7361
         // https://github.com/coreos/coreos-assembler/blob/93efb63dcbd63dc04a782e2c6c617ae0cd4a51c8/mantle/platform/qemu.go#L1156
         if (arch == 'x86_64') {
-            testIsoRuns2["${arch}:kola:uefi"] = {
+            testIsoRuns["${arch}:kola:uefi"] = {
                 def id = marker == "" ? "kola-testiso-uefi" : "kola-testiso-uefi-${marker}"
                 ids += id
                 shwrap("cosa shell -- mkdir -p ${outputDir}/${id}")
@@ -87,8 +86,17 @@ def call(params = [:]) {
     // Run the Kola tests from the cosaDir
     dir(cosaDir) {
         try {
-            parallel(testIsoRuns1)
-            parallel(testIsoRuns2)
+            // Run at most two testiso runs at a time to try not to
+            // exceed 8G of memory usage.
+            def runs = [:]
+            testIsoRuns.eachWithIndex { key, value, index ->
+                def i = index + 1 // index starts at 0, adjust
+                runs[key] = value
+                if (i % 2 == 0 || i == testIsoRuns.size()) {
+                    parallel runs
+                    runs = [:] // empty out map for next iteration
+                }
+            }
         } finally {
             for (id in ids) {
                 shwrap("cosa shell -- tar -c --xz ${outputDir}/${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")

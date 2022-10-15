@@ -39,8 +39,8 @@ def call(params = [:]) {
     // list of identifiers for each run for log collection
     def ids = []
 
-    testIsoRuns1 = [:]
-    testIsoRuns2 = [:]
+    def testIsoRuns1 = [:]
+    def testIsoRuns2 = [:]
     testIsoRuns1["${arch}:kola:metal"] = {
         def id = marker == "" ? "kola-testiso-metal" : "kola-testiso-metal-${marker}"
         ids += id

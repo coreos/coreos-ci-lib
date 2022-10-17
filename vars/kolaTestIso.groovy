@@ -34,7 +34,7 @@ def call(params = [:]) {
     def token = shwrapCapture("uuidgen | cut -f1 -d-")
 
     // Create a unique output directory for this run of fcosKola
-    def outputDir = shwrapCapture("cosa shell -- mktemp -d ${cosaDir}/tmp/kolaTestIso-XXXXX")
+    def outputDir = shwrapCapture("cd ${cosaDir} && cosa shell -- mktemp -d ${cosaDir}/tmp/kolaTestIso-XXXXX")
 
     // list of identifiers for each run for log collection
     def ids = []
@@ -44,7 +44,7 @@ def call(params = [:]) {
         def id = marker == "" ? "kola-testiso-metal" : "kola-testiso-metal-${marker}"
         ids += id
         def scenariosArg = scenarios == "" ? "" : "--scenarios ${scenarios}"
-        shwrap("cosa kola testiso -S ${extraArgs} ${scenariosArg} --output-dir ${outputDir}/${id}")
+        shwrap("cd ${cosaDir} && cosa kola testiso -S ${extraArgs} ${scenariosArg} --output-dir ${outputDir}/${id}")
     }
     if (!params['skipMetal4k']) {
         // metal4k test doesn't work on s390x for now
@@ -55,7 +55,7 @@ def call(params = [:]) {
                 def id = marker == "" ? "kola-testiso-metal4k" : "kola-testiso-metal4k-${marker}"
                 ids += id
                 def scenariosArg = scenarios4k == "" ? "" : "--scenarios ${scenarios4k}"
-                shwrap("cosa kola testiso -S --qemu-native-4k ${extraArgs4k} ${scenariosArg} --output-dir ${outputDir}/${id}")
+                shwrap("cd ${cosaDir} && cosa kola testiso -S --qemu-native-4k ${extraArgs4k} ${scenariosArg} --output-dir ${outputDir}/${id}")
             }
         }
     }
@@ -63,7 +63,7 @@ def call(params = [:]) {
         testIsoRuns["${arch}:kola:multipath"] = {
             def id = marker == "" ? "kola-testiso-multipath" : "kola-testiso-multipath-${marker}"
             ids += id
-            shwrap("cosa kola testiso -S --qemu-multipath ${extraArgsMultipath} --scenarios ${scenariosMultipath} --output-dir ${outputDir}/${id}")
+            shwrap("cd ${cosaDir} && cosa kola testiso -S --qemu-multipath ${extraArgsMultipath} --scenarios ${scenariosMultipath} --output-dir ${outputDir}/${id}")
         }
     }
     if (!params['skipUEFI']) {
@@ -76,32 +76,29 @@ def call(params = [:]) {
             testIsoRuns["${arch}:kola:uefi"] = {
                 def id = marker == "" ? "kola-testiso-uefi" : "kola-testiso-uefi-${marker}"
                 ids += id
-                shwrap("cosa shell -- mkdir -p ${outputDir}/${id}")
-                shwrap("cosa kola testiso -S --qemu-firmware=uefi ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir ${outputDir}/${id}/insecure")
-                shwrap("cosa kola testiso -S --qemu-firmware=uefi-secure ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir ${outputDir}/${id}/secure")
+                shwrap("cd ${cosaDir} && cosa shell -- mkdir -p ${outputDir}/${id}")
+                shwrap("cd ${cosaDir} && cosa kola testiso -S --qemu-firmware=uefi ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir ${outputDir}/${id}/insecure")
+                shwrap("cd ${cosaDir} && cosa kola testiso -S --qemu-firmware=uefi-secure ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir ${outputDir}/${id}/secure")
             }
         }
     }
 
-    // Run the Kola tests from the cosaDir
-    dir(cosaDir) {
-        try {
-            // Run at most two testiso runs at a time to try not to
-            // exceed 8G of memory usage.
-            def runs = [:]
-            testIsoRuns.eachWithIndex { key, value, index ->
-                def i = index + 1 // index starts at 0, adjust
-                runs[key] = value
-                if (i % 2 == 0 || i == testIsoRuns.size()) {
-                    parallel runs
-                    runs = [:] // empty out map for next iteration
-                }
+    try {
+        // Run at most two testiso runs at a time to try not to
+        // exceed 8G of memory usage.
+        def runs = [:]
+        testIsoRuns.eachWithIndex { key, value, index ->
+            def i = index + 1 // index starts at 0, adjust
+            runs[key] = value
+            if (i % 2 == 0 || i == testIsoRuns.size()) {
+                parallel runs
+                runs = [:] // empty out map for next iteration
             }
-        } finally {
-            for (id in ids) {
-                shwrap("cosa shell -- tar -c --xz ${outputDir}/${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
-                archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
-            }
+        }
+    } finally {
+        for (id in ids) {
+            shwrap("cd ${cosaDir} && cosa shell -- tar -c --xz ${outputDir}/${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
+            archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
         }
     }
 }

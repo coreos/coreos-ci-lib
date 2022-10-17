@@ -31,7 +31,7 @@ def call(params = [:]) {
     def token = shwrapCapture("uuidgen | cut -f1 -d-")
 
     // Create a unique output directory for this run of kola
-    def outputDir = shwrapCapture("cosa shell -- mktemp -d ${cosaDir}/tmp/kola-XXXXX")
+    def outputDir = shwrapCapture("cd ${cosaDir} && cosa shell -- mktemp -d ${cosaDir}/tmp/kola-XXXXX")
 
     // list of identifiers for each run for log collection
     def ids = []
@@ -61,8 +61,8 @@ def call(params = [:]) {
                 shwrap("mkdir -p /var/tmp/kola && ln -s ${env.WORKSPACE} /var/tmp/kola/${name}")
             } else {
                 shwrap("""
-                cosa shell -- mkdir -p /var/tmp/kola
-                cosa remote-session sync ${env.WORKSPACE}/ :/var/tmp/kola/${name}/
+                cd ${cosaDir} && cosa shell -- mkdir -p /var/tmp/kola
+                cd ${cosaDir} && cosa remote-session sync ${env.WORKSPACE}/ :/var/tmp/kola/${name}/
                 """)
             }
             args += "--exttest /var/tmp/kola/${name}"
@@ -87,23 +87,23 @@ def call(params = [:]) {
             //      do a single run in that case.
             id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
+            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
         } else {
             // basic run
             if (!params['skipBasicScenarios']) {
                 id = marker == "" ? "kola-basic" : "kola-basic-${marker}"
                 ids += id
-                shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --basic-qemu-scenarios")
+                shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --basic-qemu-scenarios")
             }
             // normal run (without reprovision tests because those require a lot of memory)
             id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag '!reprovision' --parallel ${parallel} ${args}")
+            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag '!reprovision' --parallel ${parallel} ${args}")
 
             // re-provision tests (not run with --parallel argument to kola)
             id = marker == "" ? "kola-reprovision" : "kola-reprovision-${marker}"
             ids += id
-            shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag reprovision ${args}")
+            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag reprovision ${args}")
         }
     }
 
@@ -115,7 +115,7 @@ def call(params = [:]) {
             try {
                 def id = marker == "" ? "kola-upgrade" : "kola-upgrade-${marker}"
                 ids += id
-                shwrap("cosa kola ${rerun} --output-dir=${outputDir}/${id} --upgrades --build=${buildID} ${archArg} ${platformArgs}")
+                shwrap("cd ${cosaDir} && cosa kola ${rerun} --output-dir=${outputDir}/${id} --upgrades --build=${buildID} ${archArg} ${platformArgs}")
             } catch(e) {
                 if (params["allowUpgradeFail"]) {
                     warnError(message: 'Upgrade Failed') {
@@ -128,22 +128,19 @@ def call(params = [:]) {
         }
     }
 
-    // Run the Kola tests from the cosaDir
-    dir(cosaDir) {
-        try {
-            if (kolaRuns.size() == 1) {
-                kolaRuns.each { k, v -> v() }
-            } else {
-                parallel(kolaRuns)
-            }
-        } finally {
-            for (id in ids) {
-                // sanity check kola actually ran and dumped its output
-                shwrap("cosa shell -- test -d ${outputDir}/${id}")
-                // collect the output
-                shwrap("cosa shell -- tar -c --xz ${outputDir}/${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
-                archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
-            }
+    try {
+        if (kolaRuns.size() == 1) {
+            kolaRuns.each { k, v -> v() }
+        } else {
+            parallel(kolaRuns)
+        }
+    } finally {
+        for (id in ids) {
+            // sanity check kola actually ran and dumped its output
+            shwrap("cd ${cosaDir} && cosa shell -- test -d ${outputDir}/${id}")
+            // collect the output
+            shwrap("cd ${cosaDir} && cosa shell -- tar -c --xz ${outputDir}/${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
+            archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
         }
     }
 }

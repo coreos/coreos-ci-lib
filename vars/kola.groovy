@@ -3,7 +3,6 @@
 //    addExtTests:       []string -- list of test paths to run
 //    allowUpgradeFail   boolean  -- warn instead of fail on upgrade failure
 //    arch:              string   -- the target architecture
-//    cosaDir:           string   -- cosa working directory
 //    parallel:          integer  -- number of tests to run in parallel (default: # CPUs)
 //    skipBasicScenarios boolean  -- skip basic qemu scenarios
 //    skipUpgrade:       boolean  -- skip running `cosa kola --upgrades`
@@ -13,8 +12,6 @@
 //    disableRerun:      boolean  -- disable reruns of failed tests
 //    marker:            string   -- some identifying text to add to uploaded artifact filenames
 def call(params = [:]) {
-    def cosaDir = utils.getCosaDir(params)
-
     // this is shared between `kola run` and `kola run-upgrade`
     def platformArgs = params.get('platformArgs', "");
     def buildID = params.get('build', "latest");
@@ -31,7 +28,7 @@ def call(params = [:]) {
     def token = shwrapCapture("uuidgen | cut -f1 -d-")
 
     // Create a unique output directory for this run of kola
-    def outputDir = shwrapCapture("cd ${cosaDir} && cosa shell -- mktemp -d ${cosaDir}/tmp/kola-XXXXX")
+    def outputDir = shwrapCapture("cosa shell -- mktemp -d tmp/kola-XXXXX")
 
     // list of identifiers for each run for log collection
     def ids = []
@@ -48,7 +45,7 @@ def call(params = [:]) {
         // src/config repo which is also automatically added.
         if (shwrapRc("""
             test -d ${env.WORKSPACE}/tests/kola
-            configorigin=\$(cd ${cosaDir}/src/config && git config --get remote.origin.url)
+            configorigin=\$(cd src/config && git config --get remote.origin.url)
             gitorigin=\$(cd ${env.WORKSPACE} && git config --get remote.origin.url)
             test "\$configorigin" != "\$gitorigin"
         """) == 0)
@@ -61,8 +58,8 @@ def call(params = [:]) {
                 shwrap("mkdir -p /var/tmp/kola && ln -s ${env.WORKSPACE} /var/tmp/kola/${name}")
             } else {
                 shwrap("""
-                cd ${cosaDir} && cosa shell -- mkdir -p /var/tmp/kola
-                cd ${cosaDir} && cosa remote-session sync ${env.WORKSPACE}/ :/var/tmp/kola/${name}/
+                cosa shell -- mkdir -p /var/tmp/kola
+                cosa remote-session sync ${env.WORKSPACE}/ :/var/tmp/kola/${name}/
                 """)
             }
             args += "--exttest /var/tmp/kola/${name}"
@@ -87,23 +84,23 @@ def call(params = [:]) {
             //      do a single run in that case.
             id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
+            shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
         } else {
             // basic run
             if (!params['skipBasicScenarios']) {
                 id = marker == "" ? "kola-basic" : "kola-basic-${marker}"
                 ids += id
-                shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --basic-qemu-scenarios")
+                shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --basic-qemu-scenarios")
             }
             // normal run (without reprovision tests because those require a lot of memory)
             id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag '!reprovision' --parallel ${parallel} ${args}")
+            shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag '!reprovision' --parallel ${parallel} ${args}")
 
             // re-provision tests (not run with --parallel argument to kola)
             id = marker == "" ? "kola-reprovision" : "kola-reprovision-${marker}"
             ids += id
-            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag reprovision ${args}")
+            shwrap("cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag reprovision ${args}")
         }
     }
 
@@ -115,7 +112,7 @@ def call(params = [:]) {
             try {
                 def id = marker == "" ? "kola-upgrade" : "kola-upgrade-${marker}"
                 ids += id
-                shwrap("cd ${cosaDir} && cosa kola ${rerun} --output-dir=${outputDir}/${id} --upgrades --build=${buildID} ${archArg} ${platformArgs}")
+                shwrap("cosa kola ${rerun} --output-dir=${outputDir}/${id} --upgrades --build=${buildID} ${archArg} ${platformArgs}")
             } catch(e) {
                 if (params["allowUpgradeFail"]) {
                     warnError(message: 'Upgrade Failed') {
@@ -137,9 +134,9 @@ def call(params = [:]) {
     } finally {
         for (id in ids) {
             // sanity check kola actually ran and dumped its output
-            shwrap("cd ${cosaDir} && cosa shell -- test -d ${outputDir}/${id}")
+            shwrap("cosa shell -- test -d ${outputDir}/${id}")
             // collect the output
-            shwrap("cd ${cosaDir} && cosa shell -- tar -c --xz ${outputDir}/${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
+            shwrap("cosa shell -- tar -c --xz ${outputDir}/${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
             archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
         }
     }

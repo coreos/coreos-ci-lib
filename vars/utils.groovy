@@ -41,3 +41,27 @@ def credentialsExist(creds) {
     tryWithCredentials(creds, { exists = true })
     return exists
 }
+
+// Sync secrets at the path described by the given list of environment
+// variables to the remote host if we are in a COSA remote session.
+def syncCredentialsIfInRemoteSession(envvars) {
+    for (envvar in envvars) {
+        shwrap("""
+        if [ -n "\${COREOS_ASSEMBLER_REMOTE_SESSION:-}" ]; then
+            # If the value of the environment variable is a path to
+            # a file then we'll create the directory the file is in
+            # and then sync the file. If it is a path to a directory
+            # then we create the directory and sync it.
+            if [ -f \${${envvar}} ]; then
+                dir=\$(dirname \${${envvar}})
+                file=\$(basename \${${envvar}})
+            else
+                dir=\${${envvar}}
+                file=''
+            fi
+            cosa shell -- sudo install -d -D -o builder -g builder --mode 777 \${dir}
+            cosa remote-session sync \${dir}/\${file} :\${dir}/\${file}
+            fi
+        """)
+    }
+}

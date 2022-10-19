@@ -34,3 +34,10 @@ def substituteStr(tmpl_str, bindings) {
     def tmpl = engine.createTemplate(tmpl_str).make(bindings)
     return tmpl.toString()
 }
+
+// Returns true if a credentials spec exists
+def credentialsExist(creds) {
+    def exists = false
+    tryWithCredentials(creds, { exists = true })
+    return exists
+}

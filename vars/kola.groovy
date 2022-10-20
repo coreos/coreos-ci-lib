@@ -36,12 +36,15 @@ def call(params = [:]) {
     // list of identifiers for each run for log collection
     def ids = []
 
+    // If given a marker then add it to the parallel run stage titles
+    def titleMarker = marker == "" ? "" : "${marker}:"
+
     // This is a bit obscure; what we're doing here is building a map of "name"
     // to "closure" which `parallel` will run in parallel. That way, we can
     // conditionally only add the `run_upgrades` stage if not explicitly
     // skipped.
     def kolaRuns = [:]
-    kolaRuns["${arch}:kola"] = {
+    kolaRuns["${titleMarker}kola"] = {
         def args = ""
         def id
         // Add the tests/kola directory, but only if it's not the same as the
@@ -108,7 +111,7 @@ def call(params = [:]) {
     }
 
     if (!params["skipUpgrade"]) {
-        kolaRuns["${arch}:kola:upgrade"] = {
+        kolaRuns["${titleMarker}kola:upgrade"] = {
             // If upgrades are broken `cosa kola --upgrades` might
             // fail to even find the previous image so we wrap this
             // in a try/catch so allowUpgradeFail can work.

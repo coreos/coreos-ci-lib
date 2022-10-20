@@ -89,15 +89,7 @@ def call(params = [:]) {
     try {
         // Run at most two testiso runs at a time to try not to
         // exceed 8G of memory usage.
-        def runs = [:]
-        testIsoRuns.eachWithIndex { key, value, index ->
-            def i = index + 1 // index starts at 0, adjust
-            runs[key] = value
-            if (i % 2 == 0 || i == testIsoRuns.size()) {
-                parallel runs
-                runs = [:] // empty out map for next iteration
-            }
-        }
+        utils.runParallel(testIsoRuns, 2)
     } finally {
         for (id in ids) {
             shwrap("cd ${cosaDir} && cosa shell -- tar -c --xz ${outputDir}/${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")

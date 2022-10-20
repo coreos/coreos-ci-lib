@@ -35,6 +35,24 @@ def substituteStr(tmpl_str, bindings) {
     return tmpl.toString()
 }
 
+// Run closures in provided map in parallel. Run at most `max`
+// parallel runs at a given time.
+def runParallel(parallelruns, max=0) {
+    if (max == 0) {
+        parallel parallelruns
+    } else {
+        def runs = [:]
+        parallelruns.eachWithIndex { key, value, index ->
+            def i = index + 1 // index starts at 0, adjust
+            runs[key] = value
+            if (i % max == 0 || i == parallelruns.size()) {
+                parallel runs
+                runs = [:] // empty out map for next iteration
+            }
+        }
+    }
+}
+
 // Returns true if a credentials spec exists
 def credentialsExist(creds) {
     def exists = false

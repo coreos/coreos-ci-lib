@@ -19,7 +19,7 @@ def call(params = [:]) {
     def platformArgs = params.get('platformArgs', "");
     def buildID = params.get('build', "latest");
     def arch = params.get('arch', "x86_64");
-    def marker = params.get('marker', "kola");
+    def marker = params.get('marker', "");
     def rerun = "--rerun"
     if (params.get('disableRerun', false)) {
         rerun = ""

@@ -39,8 +39,11 @@ def call(params = [:]) {
     // list of identifiers for each run for log collection
     def ids = []
 
+    // If given a marker then add it to the parallel run stage titles
+    def titleMarker = marker == "" ? "" : "${marker}:"
+
     def testIsoRuns = [:]
-    testIsoRuns["${arch}:kola:metal"] = {
+    testIsoRuns["${titleMarker}kola:metal"] = {
         def id = marker == "" ? "kola-testiso-metal" : "kola-testiso-metal-${marker}"
         ids += id
         def scenariosArg = scenarios == "" ? "" : "--scenarios ${scenarios}"
@@ -51,7 +54,7 @@ def call(params = [:]) {
         // https://github.com/coreos/fedora-coreos-tracker/issues/1261
         // and testiso for s390x doesn't support iso installs either
         if (arch != 's390x') {
-            testIsoRuns["${arch}:kola:metal4k"] = {
+            testIsoRuns["${titleMarker}kola:metal4k"] = {
                 def id = marker == "" ? "kola-testiso-metal4k" : "kola-testiso-metal4k-${marker}"
                 ids += id
                 def scenariosArg = scenarios4k == "" ? "" : "--scenarios ${scenarios4k}"
@@ -60,7 +63,7 @@ def call(params = [:]) {
         }
     }
     if (!params['skipMultipath']) {
-        testIsoRuns["${arch}:kola:multipath"] = {
+        testIsoRuns["${titleMarker}kola:multipath"] = {
             def id = marker == "" ? "kola-testiso-multipath" : "kola-testiso-multipath-${marker}"
             ids += id
             shwrap("cd ${cosaDir} && cosa kola testiso -S --qemu-multipath ${extraArgsMultipath} --scenarios ${scenariosMultipath} --output-dir ${outputDir}/${id}")
@@ -73,7 +76,7 @@ def call(params = [:]) {
         // https://pagure.io/fedora-infrastructure/issue/7361
         // https://github.com/coreos/coreos-assembler/blob/93efb63dcbd63dc04a782e2c6c617ae0cd4a51c8/mantle/platform/qemu.go#L1156
         if (arch == 'x86_64') {
-            testIsoRuns["${arch}:kola:uefi"] = {
+            testIsoRuns["${titleMarker}kola:uefi"] = {
                 def id = marker == "" ? "kola-testiso-uefi" : "kola-testiso-uefi-${marker}"
                 ids += id
                 shwrap("cd ${cosaDir} && cosa shell -- mkdir -p ${outputDir}/${id}")

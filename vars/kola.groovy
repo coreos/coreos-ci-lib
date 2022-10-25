@@ -138,7 +138,7 @@ def call(params = [:]) {
             // sanity check kola actually ran and dumped its output
             shwrap("cd ${cosaDir} && cosa shell -- test -d ${outputDir}/${id}")
             // collect the output
-            shwrap("cd ${cosaDir} && cosa shell -- tar -c --xz ${outputDir}/${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
+            shwrap("cd ${cosaDir} && cosa shell -- tar -C ${outputDir} -c --xz ${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
             archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
         }
     }

@@ -10,6 +10,7 @@
 //   serviceAccount: string
 //   secrets: []string
 //   configMaps: []string
+//   env: map[string]string additional environment variables
 def call(params = [:], Closure body) {
     def podJSON = libraryResource 'com/github/coreos/pod.json'
     def podObj = readJSON text: podJSON
@@ -68,6 +69,8 @@ def call(params = [:], Closure body) {
     if (params['cmd']) {
         podObj['spec']['containers'][0]['command'] = params['cmd']
     }
+
+    podObj['spec']['containers'][0]['env'] += params.env?.collectEntries {k, v -> [name: k.toString(), value: v.toString()]} ?: []
 
     // for now, we always mount an emptyDir on /srv
     params['emptyDirs'] += '/srv/'

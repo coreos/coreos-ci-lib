@@ -6,6 +6,7 @@
 //    cosaDir:           string   -- cosa working directory
 //    parallel:          integer  -- number of tests to run in parallel (default: # CPUs)
 //    skipBasicScenarios boolean  -- skip basic qemu scenarios
+//    skipSecureBoot     boolean  -- skip secureboot tests
 //    skipUpgrade:       boolean  -- skip running `cosa kola --upgrades`
 //    build:             string   -- cosa build ID to target
 //    platformArgs:      string   -- platform-specific kola args (e.g. '-p aws --aws-ami ...`)
@@ -96,7 +97,11 @@ def call(params = [:]) {
             if (!params['skipBasicScenarios']) {
                 id = marker == "" ? "kola-basic" : "kola-basic-${marker}"
                 ids += id
-                shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --basic-qemu-scenarios")
+                def skipSecureBootArg = ""
+                if (params['skipSecureBoot']) {
+                    skipSecureBootArg = "--skip-secure-boot"
+                }
+                shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --basic-qemu-scenarios ${skipSecureBootArg}")
             }
             // normal run (without reprovision tests because those require a lot of memory)
             id = marker == "" ? "kola" : "kola-${marker}"

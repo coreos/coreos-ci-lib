@@ -13,6 +13,7 @@
 //     skipMetal4k:        boolean -- skip metal4k image
 //     skipMultipath:      boolean -- skip multipath tests
 //     skipUEFI:           boolean -- skip UEFI tests
+//     skipSecureBoot      boolean -- skip secureboot tests
 //     marker:             string  -- some identifying text to add to uploaded artifact filenames
 def call(params = [:]) {
     def arch = params.get('arch', "x86_64");
@@ -81,7 +82,9 @@ def call(params = [:]) {
                 ids += id
                 shwrap("cd ${cosaDir} && cosa shell -- mkdir -p ${outputDir}/${id}")
                 shwrap("cd ${cosaDir} && cosa kola testiso -S --qemu-firmware=uefi ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir ${outputDir}/${id}/insecure")
-                shwrap("cd ${cosaDir} && cosa kola testiso -S --qemu-firmware=uefi-secure ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir ${outputDir}/${id}/secure")
+                if (!params['skipSecureBoot']) {
+                    shwrap("cd ${cosaDir} && cosa kola testiso -S --qemu-firmware=uefi-secure ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir ${outputDir}/${id}/secure")
+                }
             }
         }
     }

@@ -27,7 +27,7 @@ def call(params = [:]) {
     // only one test by default
     def scenariosMultipath = params.get('scenariosMultipath', "iso-offline-install");
     // by default, only test that we can boot successfully
-    def scenariosUEFI = params.get('scenariosUEFI', "iso-live-login,iso-as-disk");
+    def scenariosUEFI = params.get('scenariosUEFI', "iso-live-login,iso-as-disk,miniso-install");
     def marker = params.get('marker', "");
 
     // Define a unique token to be added to the file name uploads

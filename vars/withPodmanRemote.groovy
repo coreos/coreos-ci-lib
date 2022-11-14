@@ -14,7 +14,7 @@ def call(params = [:], Closure body) {
                           usernameVariable: 'REMOTEUSER',
                           keyFileVariable: 'CONTAINER_SSHKEY')
     ]) {
-        withEnv(["CONTAINER_HOST=ssh://${REMOTEUSER}@${REMOTEHOST}/run/user/${REMOTEUID}/podman/podman.sock"]) {
+        withEnv(["CONTAINER_HOST=ssh://${REMOTEUSER}@${REMOTEHOST}:22/run/user/${REMOTEUID}/podman/podman.sock"]) {
             shwrap("""
             # workaround bug: https://github.com/jenkinsci/configuration-as-code-plugin/issues/1646
             sed -i s/^----BEGIN/-----BEGIN/ \$CONTAINER_SSHKEY

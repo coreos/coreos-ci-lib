@@ -106,7 +106,7 @@ def call(params = [:]) {
             // normal run (without reprovision tests because those require a lot of memory)
             id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --denylist-test rhcos.upgrade.from-ocp-rhcos --tag '!reprovision' --parallel ${parallel} ${args}")
+            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag '!reprovision' --parallel ${parallel} ${args}")
 
             // re-provision tests (not run with --parallel argument to kola)
             id = marker == "" ? "kola-reprovision" : "kola-reprovision-${marker}"

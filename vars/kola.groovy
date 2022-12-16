@@ -126,9 +126,7 @@ def call(params = [:]) {
                 shwrap("cd ${cosaDir} && cosa kola ${rerun} --output-dir=${outputDir}/${id} --upgrades --build=${buildID} ${archArg} ${platformArgs}")
             } catch(e) {
                 if (params["allowUpgradeFail"]) {
-                    warnError(message: 'Upgrade Failed') {
-                        error(e.getMessage())
-                    }
+                    warn(e.getMessage())
                 } else {
                     throw e
                 }

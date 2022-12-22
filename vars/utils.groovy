@@ -1,3 +1,6 @@
+import org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper
+import hudson.model.Cause.UpstreamCause;
+
 def cosaCmd(params = [:]) {
 // Available parameters:
 //     cosaDir:        string  -- cosa working directory
@@ -82,4 +85,41 @@ def syncCredentialsIfInRemoteSession(envvars) {
             fi
         """)
     }
+}
+
+// Like `build` but allows retrieving information on the triggered build
+// without waiting for it. Together with `waitBuild`, this is more flexible
+// than a long-running `parallel` branch and doesn't mess up the BlueOcean
+// view. Supported parameters:
+//   job         string  (required) name of the job to build
+//   parameters  map     parameters
+def buildAsync(params) {
+    def job = Jenkins.instance.getItemByFullName(params.job)
+    def actions = [new CauseAction(new UpstreamCause(currentBuild.getRawBuild()))]
+    if (params.parameters) {
+        def v = params.parameters.collect{key, val -> new StringParameterValue(key, val.toString())}
+        actions.add(new ParametersAction(v))
+    }
+    println("Scheduling project: ${params.job}")
+    def queue = job.scheduleBuild2(0, actions.toArray(new Action[0]));
+    if (queue == null) {
+        error("Failed to schedule build for ${params.job}")
+    }
+    def r = new RunWrapper(queue.waitForStart(), false)
+    println("Started build: ${params.job} #${r.number} (${r.absoluteUrl})")
+    return r
+}
+
+def waitBuild(build, checkResult=true) {
+    def r
+    waitUntil(quiet: true, initialRecurrencePeriod: 1000) {
+        r = build.getResult()
+        return r != null
+    }
+    if (checkResult) {
+        if (r != "SUCCESS") {
+            error("Build ${build.projectName} #${build.number} finished with result ${r}")
+        }
+    }
+    return r
 }

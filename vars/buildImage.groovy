@@ -1,7 +1,6 @@
 // Builds a container image and returns its name.
 // Available parameters:
 //    dockerFile    string -- DockerFile used for the buildconfig
-//    workspace     string -- Path for local source dir used for `--from-dir=`
 //    env           dict -- Additional environment variables to set during build
 //    memory        amount of RAM to request
 //    cpu           amount of CPU to request
@@ -78,13 +77,11 @@ def call(params = [:]) {
                 openshift.create(openshift.process(bcObj))
             }
             stage('Build') {
-                def workspace = params.get('workspace', ".");
                 shwrap("""
-                    cd ${workspace}
                     touch dir.tar # pre-create it so the directory doesn't change when tar scans it
                     tar --exclude dir.tar --exclude=./pod* -zcf dir.tar .
                 """)
-                def build = openshift.selector('bc', imageName).startBuild("--from-archive=${workspace}/dir.tar")
+                def build = openshift.selector('bc', imageName).startBuild("--from-archive=dir.tar")
                 shwrap("rm dir.tar")
 
                 // Showing logs in Jenkins is also a way

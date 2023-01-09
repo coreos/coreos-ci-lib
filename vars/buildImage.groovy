@@ -47,14 +47,14 @@ def call(params = [:]) {
                 def jobMap  = job.object()
                 def uid     = jobMap.metadata.get('uid')
 
-                imageName = "coreos-ci-$repo-${UUID}"
+                imageName = "coreos-ci-$repo-${UUID}".toString()
 
                 //Create and unique name for image and bc
-                bcObj['parameters'][0] +=['name': 'NAME', 'value': "coreos-ci-$repo-${UUID}".toString()]
+                bcObj['parameters'][0] +=['name': 'NAME', 'value': imageName]
 
                 //Add OwnerReference for cascading deletion with the Job timeout
                 bcObj['parameters'][3] +=['name': 'UID', 'value': "${uid}".toString()]
-                bcObj['parameters'][2] +=['name': 'OWNERNAME', 'value': "coreos-ci-$repo-${UUID}".toString()]
+                bcObj['parameters'][2] +=['name': 'OWNERNAME', 'value': imageName]
                 if (params['dockerFile']) {
                     bcObj['parameters'][1] +=['name': 'DOCKERFILE', 'value': "${params['dockerFile']}".toString()]
                 }

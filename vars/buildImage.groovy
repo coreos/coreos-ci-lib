@@ -79,8 +79,13 @@ def call(params = [:]) {
             }
             stage('Build') {
                 def workspace = params.get('workspace', ".");
-                shwrap("tar --exclude=./pod* -zcf /tmp/dir.tar ${workspace}")
-                def build = openshift.selector('bc', imageName).startBuild("--from-archive=/tmp/dir.tar")
+                shwrap("""
+                    cd ${workspace}
+                    touch dir.tar # pre-create it so the directory doesn't change when tar scans it
+                    tar --exclude dir.tar --exclude=./pod* -zcf dir.tar .
+                """)
+                def build = openshift.selector('bc', imageName).startBuild("--from-archive=${workspace}/dir.tar")
+                shwrap("rm dir.tar")
 
                 // Showing logs in Jenkins is also a way
                 // to wait for the build to finsih

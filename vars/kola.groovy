@@ -120,11 +120,15 @@ def call(params = [:]) {
             // If upgrades are broken `cosa kola --upgrades` might
             // fail to even find the previous image so we wrap this
             // in a try/catch so allowUpgradeFail can work.
+            def id = marker == "" ? "kola-upgrade" : "kola-upgrade-${marker}"
+            ids += id
             try {
-                def id = marker == "" ? "kola-upgrade" : "kola-upgrade-${marker}"
-                ids += id
                 shwrap("cd ${cosaDir} && cosa kola ${rerun} --output-dir=${outputDir}/${id} --upgrades --build=${buildID} ${archArg} ${platformArgs}")
             } catch(e) {
+                // If we didn't even get logs then let's remove them from the list
+                if (shwrapRc("cd ${cosaDir} && cosa shell -- test -d ${outputDir}/${id}") != 0) {
+                    ids.remove(id)
+                }
                 if (params["allowUpgradeFail"]) {
                     warn(e.getMessage())
                 } else {

@@ -1,6 +1,8 @@
 def call(cmds) {
-    return sh(returnStdout: true, script: """
-        set -euo pipefail
-        ${cmds}
-    """).trim()
+    withEnv(["HOME=${env.WORKSPACE}"]) {
+        return sh(returnStdout: true, script: """
+            set -euo pipefail
+            ${cmds}
+        """).trim()
+    }
 }

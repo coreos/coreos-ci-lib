@@ -1,102 +1,38 @@
 // Run kola testiso
 // Available parameters:
-//     arch:               string  -- the target architecture
 //     cosaDir:            string  -- cosa working directory
 //     extraArgs:          string  -- extra arguments to pass to `kola testiso`
-//     extraArgs4k:        string  -- extra arguments to pass to 4k `kola testiso`
-//     extraArgsMultipath: string  -- extra arguments to pass to multipath `kola testiso`
-//     extraArgsUEFI:      string  -- extra arguments to pass to UEFI `kola testiso`
-//     scenarios:          string  -- scenarios to pass to `kola testiso`
-//     scenarios4k:        string  -- scenarios to pass to `kola testiso`
-//     scenariosMultipath: string  -- scenarios to pass to `kola testiso`
-//     scenariosUEFI:      string  -- scenarios to pass to `kola testiso`
-//     skipMetal4k:        boolean -- skip metal4k image
-//     skipMultipath:      boolean -- skip multipath tests
+//     marker:             string  -- some identifying text to add to uploaded artifact filenames
 //     skipUEFI:           boolean -- skip UEFI tests
 //     skipSecureBoot      boolean -- skip secureboot tests
-//     marker:             string  -- some identifying text to add to uploaded artifact filenames
+
 def call(params = [:]) {
-    def arch = params.get('arch', "x86_64");
-    def cosaDir = utils.getCosaDir(params)
+    def cosaDir = utils.getCosaDir(params);
     def extraArgs = params.get('extraArgs', "");
-    def extraArgs4k = params.get('extraArgs4k', "");
-    def extraArgsMultipath = params.get('extraArgsMultipath', "");
-    def extraArgsUEFI = params.get('extraArgsUEFI', "");
-    def scenarios = params.get('scenarios', "");
-    def scenarios4k = params.get('scenarios4k', "");
-    // only one test by default
-    def scenariosMultipath = params.get('scenariosMultipath', "iso-offline-install");
-    // by default, only test that we can boot successfully
-    def scenariosUEFI = params.get('scenariosUEFI', "iso-live-login,iso-as-disk");
     def marker = params.get('marker', "");
 
+
+    if (params['skipUEFI']) {
+        extraArgs += " --denylist-test *.uefi*"
+    }
+    if (params['skipSecureBoot']) {
+        extraArgs += " --denylist-test *.uefi-secure"
+    }
     // Define a unique token to be added to the file name uploads
     // Prevents multiple runs overwriting same filename in archiveArtifacts
     def token = shwrapCapture("uuidgen | cut -f1 -d-")
 
-    // Create a unique output directory for this run of fcosKola
-    def outputDir = shwrapCapture("cd ${cosaDir} && cosa shell -- mktemp -d ${cosaDir}/tmp/kolaTestIso-XXXXX")
+    // Create a unique output directory for this run of kola
+    def outputDir = shwrapCapture("cd ${cosaDir} && cosa shell -- mktemp -d ${cosaDir}/tmp/kola-XXXXX")
 
-    // list of identifiers for each run for log collection
-    def ids = []
+    def id = marker == "" ? "kolatestiso" : "kolatestiso-${marker}"
 
-    // If given a marker then add it to the parallel run stage titles
-    def titleMarker = marker == "" ? "" : "${marker}:"
-
-    def testIsoRuns = [:]
-    testIsoRuns["${titleMarker}kola:metal"] = {
-        def id = marker == "" ? "kola-testiso-metal" : "kola-testiso-metal-${marker}"
-        ids += id
-        def scenariosArg = scenarios == "" ? "" : "--scenarios ${scenarios}"
-        shwrap("cd ${cosaDir} && cosa kola testiso -S ${extraArgs} ${scenariosArg} --output-dir ${outputDir}/${id}")
-    }
-    if (!params['skipMetal4k']) {
-        // metal4k test doesn't work on s390x for now
-        // https://github.com/coreos/fedora-coreos-tracker/issues/1261
-        // and testiso for s390x doesn't support iso installs either
-        if (arch != 's390x') {
-            testIsoRuns["${titleMarker}kola:metal4k"] = {
-                def id = marker == "" ? "kola-testiso-metal4k" : "kola-testiso-metal4k-${marker}"
-                ids += id
-                def scenariosArg = scenarios4k == "" ? "" : "--scenarios ${scenarios4k}"
-                shwrap("cd ${cosaDir} && cosa kola testiso -S --qemu-native-4k ${extraArgs4k} ${scenariosArg} --output-dir ${outputDir}/${id}")
-            }
-        }
-    }
-    if (!params['skipMultipath']) {
-        testIsoRuns["${titleMarker}kola:multipath"] = {
-            def id = marker == "" ? "kola-testiso-multipath" : "kola-testiso-multipath-${marker}"
-            ids += id
-            shwrap("cd ${cosaDir} && cosa kola testiso -S --qemu-multipath ${extraArgsMultipath} --scenarios ${scenariosMultipath} --output-dir ${outputDir}/${id}")
-        }
-    }
-    if (!params['skipUEFI']) {
-        // only aarch64 and x86_64 support UEFI. aarch64 UEFI was
-        // already tested in the basic run above and secureboot isn't
-        // supported in aarch64 so we limit this to x86_64 for now.
-        // https://pagure.io/fedora-infrastructure/issue/7361
-        // https://github.com/coreos/coreos-assembler/blob/93efb63dcbd63dc04a782e2c6c617ae0cd4a51c8/mantle/platform/qemu.go#L1156
-        if (arch == 'x86_64') {
-            testIsoRuns["${titleMarker}kola:uefi"] = {
-                def id = marker == "" ? "kola-testiso-uefi" : "kola-testiso-uefi-${marker}"
-                ids += id
-                shwrap("cd ${cosaDir} && cosa shell -- mkdir -p ${outputDir}/${id}")
-                shwrap("cd ${cosaDir} && cosa kola testiso -S --qemu-firmware=uefi ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir ${outputDir}/${id}/insecure")
-                if (!params['skipSecureBoot']) {
-                    shwrap("cd ${cosaDir} && cosa kola testiso -S --qemu-firmware=uefi-secure ${extraArgsUEFI} --scenarios ${scenariosUEFI} --output-dir ${outputDir}/${id}/secure")
-                }
-            }
-        }
-    }
-
+    // We add --inst-insecure here since in CI and in our build pipeline
+    // the signatures for the metal images won't have been created yet.
     try {
-        // Run at most two testiso runs at a time to try not to
-        // exceed 8G of memory usage.
-        utils.runParallel(testIsoRuns, 2)
+        shwrap("cd ${cosaDir} && cosa kola testiso --inst-insecure ${extraArgs} --output-dir ${outputDir}/${id}")
     } finally {
-        for (id in ids) {
-            shwrap("cd ${cosaDir} && cosa shell -- tar -C ${outputDir} -c --xz ${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
-            archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
-        }
+        shwrap("cd ${cosaDir} && cosa shell -- tar -C ${outputDir} -c --xz ${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
+        archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
     }
 }

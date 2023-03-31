@@ -30,10 +30,6 @@ def call(params = [:], Closure body) {
     podObj['spec']['containers'][0]['env'] = []
     podObj['spec']['containers'][0]['resources'] = [requests: [:], limits: [:]]
 
-    // HOME may not be set or set to /, which normally we don't have access to.
-    // Make sure it's set to a path we have access to.
-     podObj['spec']['containers'][0]['env'] += ['name': 'HOME', 'value': env.WORKSPACE]
-
     if (params['memory']) {
         podObj['spec']['containers'][0]['resources']['requests']['memory'] = params['memory'].toString()
         podObj['spec']['containers'][0]['resources']['limits']['memory'] = params['memory'].toString()

@@ -8,7 +8,7 @@
 //   emptyDirs: []string
 //   cmd: []string
 //   serviceAccount: string
-//   secrets: []string
+//   secrets: []string secret name and/or my-secret:my-key:mount-path
 //   configMaps: []string
 def call(params = [:], Closure body) {
     def podJSON = libraryResource 'com/github/coreos/pod.json'
@@ -80,11 +80,18 @@ def call(params = [:], Closure body) {
     }
 
     params['secrets'].eachWithIndex { secret, i ->
-        podObj['spec']['volumes'] += ['name': "secret-${i}".toString(), 'secret': [secretName: secret]]
-        podObj['spec']['containers'][0]['volumeMounts'] += ['name': "secret-${i}".toString(), 'mountPath': "/run/kubernetes/secrets/${secret}".toString()]
-
+        def key, mountPath
+        if (secret.contains(":")) {
+            (secret, key, mountPath) = secret.split(":")
+            podObj['spec']['volumes'] += ['name': "secret-${i}".toString(), 'secret': [secretName: secret, items: [['key':key, 'path': key]]]]
+            podObj['spec']['containers'][0]['volumeMounts'] += ['name': "secret-${i}".toString(), 'mountPath': mountPath, 'subPath': key]
+        } else {
+            mountPath = "/run/kubernetes/secrets/${secret}".toString()
+            podObj['spec']['volumes'] += ['name': "secret-${i}".toString(), 'secret': [secretName: secret]]
+            podObj['spec']['containers'][0]['volumeMounts'] += ['name': "secret-${i}".toString(), 'mountPath': mountPath]
+        }
         def envName = secret.replace("-", "_").toUpperCase()
-        podObj['spec']['containers'][0]['env'] += ['name': envName, 'value': "/run/kubernetes/secrets/${secret}".toString()]
+        podObj['spec']['containers'][0]['env'] += ['name': envName, 'value': mountPath]
     }
 
     params['configMaps'].eachWithIndex { configMap, i ->

@@ -29,7 +29,7 @@ def call(params = [:]) {
         if (!params.get('disableRerunSuccess', false)) {
             // by default we'll allow rerun success for tests that need internet, but this can be overridden
             // by passing in a value to allowRerunSuccessArgs
-            rerun += " --allow-rerun-success "
+            rerun += " --allow-rerun-success="
             rerun += params.get('rerunSuccessArgs', "tags=needs-internet")
         }
     }

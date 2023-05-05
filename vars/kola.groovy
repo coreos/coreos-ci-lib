@@ -1,18 +1,20 @@
 // Run kola tests on the latest build in the cosa dir
 // Available parameters:
-//    addExtTests:       []string -- list of test paths to run
-//    allowUpgradeFail   boolean  -- warn instead of fail on upgrade failure
-//    arch:              string   -- the target architecture
-//    cosaDir:           string   -- cosa working directory
-//    parallel:          integer  -- number of tests to run in parallel (default: # CPUs)
-//    skipBasicScenarios boolean  -- skip basic qemu scenarios
-//    skipSecureBoot     boolean  -- skip secureboot tests
-//    skipUpgrade:       boolean  -- skip running `cosa kola --upgrades`
-//    build:             string   -- cosa build ID to target
-//    platformArgs:      string   -- platform-specific kola args (e.g. '-p aws --aws-ami ...`)
-//    extraArgs:         string   -- additional kola args for `kola run` (e.g. `ext.*`)
-//    disableRerun:      boolean  -- disable reruns of failed tests
-//    marker:            string   -- some identifying text to add to uploaded artifact filenames
+//    addExtTests:        []string -- list of test paths to run
+//    allowUpgradeFail    boolean  -- warn instead of fail on upgrade failure
+//    disableRerunSuccess boolean  -- disable rerun success (the default)
+//    rerunSuccessArgs    string   -- override rerun success args (default: tags=needs-internet)
+//    arch:               string   -- the target architecture
+//    cosaDir:            string   -- cosa working directory
+//    parallel:           integer  -- number of tests to run in parallel (default: # CPUs)
+//    skipBasicScenarios  boolean  -- skip basic qemu scenarios
+//    skipSecureBoot      boolean  -- skip secureboot tests
+//    skipUpgrade:        boolean  -- skip running `cosa kola --upgrades`
+//    build:              string   -- cosa build ID to target
+//    platformArgs:       string   -- platform-specific kola args (e.g. '-p aws --aws-ami ...`)
+//    extraArgs:          string   -- additional kola args for `kola run` (e.g. `ext.*`)
+//    disableRerun:       boolean  -- disable reruns of failed tests
+//    marker:             string   -- some identifying text to add to uploaded artifact filenames
 def call(params = [:]) {
     def cosaDir = utils.getCosaDir(params)
 
@@ -21,9 +23,15 @@ def call(params = [:]) {
     def buildID = params.get('build', "latest");
     def arch = params.get('arch', "x86_64");
     def marker = params.get('marker', "");
-    def rerun = "--rerun"
-    if (params.get('disableRerun', false)) {
-        rerun = ""
+    def rerun = ""
+    if (!params.get('disableRerun', false)) {
+        rerun = "--rerun"
+        if (!params.get('disableRerunSuccess', false)) {
+            // by default we'll allow rerun success for tests that need internet, but this can be overridden
+            // by passing in a value to allowRerunSuccessArgs
+            rerun += " --allow-rerun-success "
+            rerun += params.get('rerunSuccessArgs', "tags=needs-internet")
+        }
     }
     def archArg = "--arch=${arch}"
 

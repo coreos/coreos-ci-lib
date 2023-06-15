@@ -10,6 +10,7 @@
 //   serviceAccount: string
 //   secrets: []string secret name and/or my-secret:my-key:mount-path
 //   configMaps: []string
+//   name : string  - optional. The name of the pod we want to create
 def call(params = [:], Closure body) {
     def podJSON = libraryResource 'com/github/coreos/pod.json'
     def podObj = readJSON text: podJSON
@@ -104,6 +105,10 @@ def call(params = [:], Closure body) {
 
     // XXX: look into converting to a YAML string instead
     def label = "pod-${UUID.randomUUID().toString()}"
+    if (params['name']) {
+    	label = params['name']
+    }
+    
     def podYAML
     node {
         writeYaml(file: "${label}.yaml", data: podObj)

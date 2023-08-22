@@ -48,6 +48,21 @@ def call(params = [:]) {
     // If given a marker then add it to the parallel run stage titles
     def titleMarker = marker == "" ? "" : "${marker}:"
 
+    // A closure to help run kola. Common arguments and Error/Warning
+    // handling are consolidated in this function as a convenience.
+    def runKola = { id, args ->
+        def rc = shwrapRc("""
+            cd ${cosaDir}
+            cosa kola run ${rerun} --build=${buildID} --output-dir=${outputDir}/${id} \
+                --on-warn-failure-exit-77 ${archArg} ${platformArgs} ${args}
+        """)
+        if (rc == 77) {
+            warn("A warn:true test failed")
+        } else if (rc != 0) {
+            error("Script returned exit code ${rc}")
+        }
+    }
+
     // This is a bit obscure; what we're doing here is building a map of "name"
     // to "closure" which `parallel` will run in parallel. That way, we can
     // conditionally only add the `run_upgrades` stage if not explicitly
@@ -99,7 +114,7 @@ def call(params = [:]) {
             //      do a single run in that case.
             id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --parallel ${parallel} ${args} ${extraArgs}")
+            runKola(id, "--parallel ${parallel} ${args} ${extraArgs}")
         } else {
             // basic run
             if (!params['skipBasicScenarios']) {
@@ -109,17 +124,17 @@ def call(params = [:]) {
                 if (params['skipSecureBoot']) {
                     skipSecureBootArg = "--skip-secure-boot"
                 }
-                shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --basic-qemu-scenarios ${skipSecureBootArg}")
+                runKola(id, "--basic-qemu-scenarios ${skipSecureBootArg}")
             }
             // normal run (without reprovision tests because those require a lot of memory)
             id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag '!reprovision' --parallel ${parallel} ${args}")
+            runKola(id, "--tag '!reprovision' --parallel ${parallel} ${args}")
 
             // re-provision tests (not run with --parallel argument to kola)
             id = marker == "" ? "kola-reprovision" : "kola-reprovision-${marker}"
             ids += id
-            shwrap("cd ${cosaDir} && cosa kola run ${rerun} --output-dir=${outputDir}/${id} --build=${buildID} ${archArg} ${platformArgs} --tag reprovision ${args}")
+            runKola(id, "--tag reprovision ${args}")
         }
     }
 
@@ -131,7 +146,7 @@ def call(params = [:]) {
             def id = marker == "" ? "kola-upgrade" : "kola-upgrade-${marker}"
             ids += id
             try {
-                shwrap("cd ${cosaDir} && cosa kola ${rerun} --output-dir=${outputDir}/${id} --upgrades --build=${buildID} ${archArg} ${platformArgs}")
+                runKola(id, "--upgrades")
             } catch(e) {
                 // If we didn't even get logs then let's remove them from the list
                 if (shwrapRc("cd ${cosaDir} && cosa shell -- test -d ${outputDir}/${id}") != 0) {

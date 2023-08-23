@@ -99,7 +99,7 @@ def call(params = [:]) {
         def addExtTests = params.get('addExtTests', [])
 
         for (path in addExtTests) {
-            args += " --exttest ${env.WORKSPACE}/${path}"
+            args += " --exttest=${env.WORKSPACE}/${path}"
         }
 
         if (platformArgs != "" || extraArgs != "") {
@@ -114,7 +114,7 @@ def call(params = [:]) {
             //      do a single run in that case.
             id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            runKola(id, 'run', "--parallel ${parallel} ${args} ${extraArgs}")
+            runKola(id, 'run', "--parallel=${parallel} ${args} ${extraArgs}")
         } else {
             // basic run
             if (!params['skipBasicScenarios']) {
@@ -129,12 +129,12 @@ def call(params = [:]) {
             // normal run (without reprovision tests because those require a lot of memory)
             id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            runKola(id, 'run', "--tag '!reprovision' --parallel ${parallel} ${args}")
+            runKola(id, 'run', "--tag='!reprovision' --parallel=${parallel} ${args}")
 
             // re-provision tests (not run with --parallel argument to kola)
             id = marker == "" ? "kola-reprovision" : "kola-reprovision-${marker}"
             ids += id
-            runKola(id, 'run', "--tag reprovision ${args}")
+            runKola(id, 'run', "--tag='reprovision' ${args}")
         }
     }
 

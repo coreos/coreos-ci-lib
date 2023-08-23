@@ -50,10 +50,10 @@ def call(params = [:]) {
 
     // A closure to help run kola. Common arguments and Error/Warning
     // handling are consolidated in this function as a convenience.
-    def runKola = { id, args ->
+    def runKola = { id, action, args ->
         def rc = shwrapRc("""
             cd ${cosaDir}
-            cosa kola run ${rerun} --build=${buildID} --output-dir=${outputDir}/${id} \
+            cosa kola ${action} ${rerun} --build=${buildID} --output-dir=${outputDir}/${id} \
                 --on-warn-failure-exit-77 ${archArg} ${platformArgs} ${args}
         """)
         if (rc == 77) {
@@ -114,7 +114,7 @@ def call(params = [:]) {
             //      do a single run in that case.
             id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            runKola(id, "--parallel ${parallel} ${args} ${extraArgs}")
+            runKola(id, 'run', "--parallel ${parallel} ${args} ${extraArgs}")
         } else {
             // basic run
             if (!params['skipBasicScenarios']) {
@@ -124,17 +124,17 @@ def call(params = [:]) {
                 if (params['skipSecureBoot']) {
                     skipSecureBootArg = "--skip-secure-boot"
                 }
-                runKola(id, "--basic-qemu-scenarios ${skipSecureBootArg}")
+                runKola(id, 'run', "--basic-qemu-scenarios ${skipSecureBootArg}")
             }
             // normal run (without reprovision tests because those require a lot of memory)
             id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            runKola(id, "--tag '!reprovision' --parallel ${parallel} ${args}")
+            runKola(id, 'run', "--tag '!reprovision' --parallel ${parallel} ${args}")
 
             // re-provision tests (not run with --parallel argument to kola)
             id = marker == "" ? "kola-reprovision" : "kola-reprovision-${marker}"
             ids += id
-            runKola(id, "--tag reprovision ${args}")
+            runKola(id, 'run', "--tag reprovision ${args}")
         }
     }
 
@@ -146,7 +146,7 @@ def call(params = [:]) {
             def id = marker == "" ? "kola-upgrade" : "kola-upgrade-${marker}"
             ids += id
             try {
-                runKola(id, "--upgrades")
+                runKola(id, 'run-upgrade',  "--upgrades")
             } catch(e) {
                 // If we didn't even get logs then let's remove them from the list
                 if (shwrapRc("cd ${cosaDir} && cosa shell -- test -d ${outputDir}/${id}") != 0) {

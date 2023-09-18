@@ -3,7 +3,7 @@ def call(scm, dir) {
     checkout([
          $class: 'GitSCM',
          branches: scm.branches,
-         extensions: scm.extensions + [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
+         extensions: scm.extensions + [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir, recursiveSubmodules: true]],
          userRemoteConfigs: scm.userRemoteConfigs
     ])
 }

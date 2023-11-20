@@ -3,9 +3,11 @@
 # here isn't used for anything (other than staying alive for 24h).
 
 kind: Template
-apiVersion: v1
+apiVersion: template.openshift.io/v1
 metadata:
-  name: clean-up
+  # the name doesn't matter since we don't actually create a template object
+  # from this; we just instantiate from it client-side
+  name: unused
 objects:
 - apiVersion: batch/v1
   kind: Job
@@ -25,4 +27,3 @@ objects:
 parameters:
 - name: NAME
   required: true
-  value: cleanupJob

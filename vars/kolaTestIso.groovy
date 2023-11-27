@@ -25,7 +25,7 @@ def call(params = [:]) {
     // Create a unique output directory for this run of kola
     def outputDir = shwrapCapture("cd ${cosaDir} && cosa shell -- mktemp -d ${cosaDir}/tmp/kola-XXXXX")
 
-    def id = marker == "" ? "kolatestiso" : "kolatestiso-${marker}"
+    def id = marker == "" ? "kola-testiso" : "kola-testiso-${marker}"
 
     // We add --inst-insecure here since in CI and in our build pipeline
     // the signatures for the metal images won't have been created yet.
@@ -34,5 +34,7 @@ def call(params = [:]) {
     } finally {
         shwrap("cd ${cosaDir} && cosa shell -- tar -C ${outputDir} -c --xz ${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
         archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
+        shwrap("cd ${cosaDir} && cosa shell -- /usr/lib/coreos-assembler/kola-junit --classname ${id} --koladir ${outputDir}/${id} --output - > ${env.WORKSPACE}/${id}-${token}.xml || :")
+        junit allowEmptyResults: true, skipMarkingBuildUnstable: true, skipPublishingChecks: true, testResults: "${id}-${token}.xml"
     }
 }

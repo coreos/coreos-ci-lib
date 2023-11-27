@@ -170,6 +170,14 @@ def call(params = [:]) {
             // collect the output
             shwrap("cd ${cosaDir} && cosa shell -- tar -C ${outputDir} -c --xz ${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
             archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"
+            // skip junit output for basic, which isn't native to kola so has
+            // a different layout; we can drop this once
+            // https://github.com/coreos/coreos-assembler/pull/3652 merges
+            if (id.contains('basic')) {
+                continue
+            }
+            shwrap("cd ${cosaDir} && cosa shell -- /usr/lib/coreos-assembler/kola-junit --classname ${id} --koladir ${outputDir}/${id} --output - > ${env.WORKSPACE}/${id}-${token}.xml || :")
+            junit allowEmptyResults: true, skipMarkingBuildUnstable: true, skipPublishingChecks: true, testResults: "${id}-${token}.xml"
         }
     }
 }

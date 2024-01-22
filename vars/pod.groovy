@@ -11,6 +11,7 @@
 //   secrets: []string secret name and/or my-secret:my-key:mount-path
 //   configMaps: []string
 //   name : string  - optional. The name of the pod we want to create
+//   env: map -- additional environment variables to set
 def call(params = [:], Closure body) {
     def podJSON = libraryResource 'com/github/coreos/pod.json'
     def podObj = readJSON text: podJSON
@@ -30,6 +31,13 @@ def call(params = [:], Closure body) {
     // initialize some maps/lists to make it easier to populate later on
     podObj['spec']['containers'][0]['env'] = []
     podObj['spec']['containers'][0]['resources'] = [requests: [:], limits: [:]]
+
+    // Populate specified environment variables for the container
+    if (params['env']) {
+        params['env'].each{ name, val ->
+            podObj['spec']['containers'][0]['env'] += ['name': name, 'value': val]
+        }
+    }
 
     if (params['memory']) {
         podObj['spec']['containers'][0]['resources']['requests']['memory'] = params['memory'].toString()

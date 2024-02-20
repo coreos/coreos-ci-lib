@@ -1,6 +1,8 @@
 // Build CoreOS, possibly with modifications.
 // Available parameters:
 //    cosaDir:        string   -- Cosa working directory
+//    srcConfig:      string   -- Path or URL to source config repo
+//    variant:        string   -- Variant to build
 //    extraArgs:      string   -- Extra arguments to pass to `cosa build`
 //    extraFetchArgs: string   -- Extra arguments to pass to `cosa fetch`
 //    gitBranch       string   -- Git Branch for fedora-coreos-config
@@ -19,12 +21,19 @@ def call(params = [:]) {
 
         shwrap("mkdir -p ${cosaDir}")
 
+        if (!params['srcConfig']) {
+            params['srcConfig'] = "https://github.com/coreos/fedora-coreos-config"
+        }
+
         if (!params['skipInit']) {
-            def branchArg = ""
+            def initArgs = ""
             if (params['gitBranch']) {
-                branchArg = "--branch ${params['gitBranch']}"
+                initArgs += " --branch ${params['gitBranch']}"
             }
-            shwrap("cd ${cosaDir} && cosa init ${branchArg} https://github.com/coreos/fedora-coreos-config")
+            if (params['variant']) {
+                initArgs += " --variant ${params['variant']}"
+            }
+            shwrap("cd ${cosaDir} && cosa init ${initArgs} ${params['srcConfig']}")
         }
 
         if (params['make']) {

@@ -7,7 +7,7 @@
 //    arch:               string   -- the target architecture
 //    cosaDir:            string   -- cosa working directory
 //    parallel:           integer  -- number of tests to run in parallel (default: # CPUs)
-//    skipBasicScenarios  boolean  -- skip basic qemu scenarios
+//    skipBasicScenarios  boolean  -- skip basic qemu scenarios (ignored if cosa has https://github.com/coreos/coreos-assembler/pull/3652)
 //    skipSecureBoot      boolean  -- skip secureboot tests
 //    skipUpgrade:        boolean  -- skip running `cosa kola --upgrades`
 //    build:              string   -- cosa build ID to target
@@ -116,15 +116,26 @@ def call(params = [:]) {
             ids += id
             runKola(id, 'run', "--parallel=${parallel} ${args} ${extraArgs}")
         } else {
-            // basic run
-            if (!params['skipBasicScenarios']) {
-                id = marker == "" ? "kola-basic" : "kola-basic-${marker}"
-                ids += id
-                def skipSecureBootArg = ""
+            // Check if the basic tests are registered kola tests or not.
+            def availableTests = shwrapCapture("kola list --json | jq -r '.[].Name'").split()
+            // This essentially checks if the running has cosa https://github.com/coreos/coreos-assembler/pull/3652
+            def basicScenariosBuiltIn = "basic.nvme" in availableTests  
+
+            if (basicScenariosBuiltIn) {
                 if (params['skipSecureBoot']) {
-                    skipSecureBootArg = "--skip-secure-boot"
+                    // skip secureboot tests using kola's denylist
+                    args += "--denylist-test *.uefi-secure"
                 }
-                runKola(id, 'run', "--basic-qemu-scenarios ${skipSecureBootArg}")
+            } else {
+                if (!params['skipBasicScenarios']) {
+                    id = marker == "" ? "kola-basic" : "kola-basic-${marker}"
+                    ids += id
+                    def skipSecureBootArg = ""
+                    if (params['skipSecureBoot']) {
+                        skipSecureBootArg = "--skip-secure-boot"
+                    }
+                    runKola(id, 'run', "--basic-qemu-scenarios ${skipSecureBootArg}")
+                }
             }
             // normal run (without reprovision tests because those require a lot of memory)
             id = marker == "" ? "kola" : "kola-${marker}"

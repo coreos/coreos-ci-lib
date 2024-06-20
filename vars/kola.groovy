@@ -10,6 +10,7 @@
 //    skipBasicScenarios  boolean  -- skip basic qemu scenarios (ignored if cosa has https://github.com/coreos/coreos-assembler/pull/3652)
 //    skipSecureBoot      boolean  -- skip secureboot tests
 //    skipUpgrade:        boolean  -- skip running `cosa kola --upgrades`
+//    skipKolaTags:       []string -- list of kola tags to skip
 //    build:              string   -- cosa build ID to target
 //    platformArgs:       string   -- platform-specific kola args (e.g. '-p aws --aws-ami ...`)
 //    extraArgs:          string   -- additional kola args for `kola run` (e.g. `ext.*`)
@@ -102,6 +103,12 @@ def call(params = [:]) {
             args += " --exttest=${env.WORKSPACE}/${path}"
         }
 
+        def skipKolaTags = params.get('skipKolaTags', [])
+
+        for (tag in skipKolaTags) {
+            args += " --tag=!${tag}"
+        }
+
         if (platformArgs != "" || extraArgs != "") {
             // There are two cases where we land here:
             //   1. The user passed `platformArgs`, which implies we're
@@ -114,7 +121,7 @@ def call(params = [:]) {
             //      do a single run in that case.
             id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            runKola(id, 'run', "--parallel=${parallel} ${args} ${extraArgs}")
+            runKola(id, 'run', "${args} ${extraArgs} --parallel=${parallel}")
         } else {
             // Check if the basic tests are registered kola tests or not.
             def availableTests = shwrapCapture("kola list --json | jq -r '.[].Name'").split()
@@ -140,7 +147,7 @@ def call(params = [:]) {
             // normal run (without reprovision tests because those require a lot of memory)
             id = marker == "" ? "kola" : "kola-${marker}"
             ids += id
-            runKola(id, 'run', "--tag='!reprovision' --parallel=${parallel} ${args}")
+            runKola(id, 'run', "--tag='!reprovision' ${args} --parallel=${parallel}")
 
             // re-provision tests (not run with --parallel argument to kola)
             id = marker == "" ? "kola-reprovision" : "kola-reprovision-${marker}"

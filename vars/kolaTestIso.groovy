@@ -5,6 +5,7 @@
 //     marker:             string  -- some identifying text to add to uploaded artifact filenames
 //     skipUEFI:           boolean -- skip UEFI tests
 //     skipSecureBoot      boolean -- skip secureboot tests
+//     skipPxeAppendRootfs boolean -- skip PXE with appended roofs tests
 
 def call(params = [:]) {
     def cosaDir = utils.getCosaDir(params);
@@ -31,6 +32,9 @@ def call(params = [:]) {
     // the signatures for the metal images won't have been created yet.
     try {
         shwrap("cd ${cosaDir} && cosa kola testiso --inst-insecure ${extraArgs} --output-dir ${outputDir}/${id}")
+        if (!params['skipPxeAppendRootfs']) {
+            shwrap("cd ${cosaDir} && cosa kola testiso pxe* --pxe-append-rootfs ${extraArgs} --output-dir ${outputDir}/${id}")
+        }
     } finally {
         shwrap("cd ${cosaDir} && cosa shell -- tar -C ${outputDir} -c --xz ${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
         archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"

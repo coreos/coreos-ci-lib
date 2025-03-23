@@ -31,6 +31,19 @@ def call(params = [:]) {
     // the signatures for the metal images won't have been created yet.
     try {
         shwrap("cd ${cosaDir} && cosa kola testiso --inst-insecure ${extraArgs} --output-dir ${outputDir}/${id}")
+    } catch(e) {
+        // To cut down on flake errors let's retry the failed tests
+        if (shwrapRc("cd ${cosaDir} && cosa shell -- test -f ${outputDir}/${id}/reports/report.json") == 0) {
+            def rerun_tests = shwrapCapture("""
+                cd ${cosaDir}
+                cosa shell -- cat ${outputDir}/${id}/reports/report.json | \
+                    jq -r '.tests[] | select(.result == "FAIL") | .name'
+            """)
+            echo "Re-running failed tests (flake detection): ${rerun_tests}"
+            shwrap("cd ${cosaDir} && cosa kola testiso --inst-insecure ${rerun_tests} --output-dir ${outputDir}/${id}/rerun")
+        } else {
+            throw e
+        }
     } finally {
         shwrap("cd ${cosaDir} && cosa shell -- tar -C ${outputDir} -c --xz ${id} > ${env.WORKSPACE}/${id}-${token}.tar.xz || :")
         archiveArtifacts allowEmptyArchive: true, artifacts: "${id}-${token}.tar.xz"

@@ -37,10 +37,11 @@ def call(params = [:]) {
             def rerun_tests = shwrapCapture("""
                 cd ${cosaDir}
                 cosa shell -- cat ${outputDir}/${id}/reports/report.json | \
-                    jq -r '.tests[] | select(.result == "FAIL") | .name'
+                    jq -r '.tests[] | select(.result == "FAIL") | .name' | \
+                    tr '\n' ' '
             """)
             echo "Re-running failed tests (flake detection): ${rerun_tests}"
-            shwrap("cd ${cosaDir} && cosa kola testiso --inst-insecure ${rerun_tests} --output-dir ${outputDir}/${id}/rerun")
+            shwrap("cd ${cosaDir} && cosa kola testiso --inst-insecure --output-dir ${outputDir}/${id}/rerun ${rerun_tests}")
         } else {
             throw e
         }

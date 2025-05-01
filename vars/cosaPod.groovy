@@ -15,7 +15,11 @@ def call(params = [:], Closure body) {
     params['cmd'] = ["/usr/bin/dumb-init", "/usr/bin/sleep", "infinity"]
 
     pod(params) {
-        shwrap("cat /cosa/coreos-assembler-git.json || :")
+        shwrap("(cat /cosa/coreos-assembler-git.json || :) | tee coreos-assembler-git.json")
+        archiveArtifacts artifacts: "coreos-assembler-git.json"
+        shwrap("rpm -qa | sort > coreos-assembler-rpmdb.txt")
+        archiveArtifacts artifacts: "coreos-assembler-rpmdb.txt"
+        shwrap("rm coreos-assembler-git.json coreos-assembler-rpmdb.txt")
         body()
     }
 }

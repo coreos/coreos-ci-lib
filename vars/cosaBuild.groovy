@@ -60,6 +60,7 @@ def call(params = [:]) {
 
         shwrap("cd ${cosaDir} && cosa fetch ${extraFetchArgs}")
         shwrap("cd ${cosaDir} && cosa build ${extraArgs}")
+        shwrap("cd ${cosaDir} && cosa osbuild qemu")
     }
 
     if (!params['skipKola']) {

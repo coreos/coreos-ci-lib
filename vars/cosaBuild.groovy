@@ -13,13 +13,19 @@
 //    overlays:       []string -- List of directories to overlay
 //    skipInit:       boolean  -- Assume `cosa init` has already been run
 //    skipKola:       boolean  -- Do not automatically run kola on resulting build
+//    user:           string   -- Build with username (which is used when running pod as root)
 def call(params = [:]) {
     stage("Build") {
         def cosaDir = utils.getCosaDir(params)
         def extraFetchArgs = params.get('extraFetchArgs', "");
         def extraArgs = params.get('extraArgs', "");
 
-        shwrap("mkdir -p ${cosaDir}")
+        def cmd = "mkdir -p ${cosaDir}"
+        if(!params['user']) {
+            unprivshwrap(params['user'], cmd)
+        } else {
+            shwrap(cmd)
+        }
 
         if (!params['srcConfig']) {
             params['srcConfig'] = "https://github.com/coreos/fedora-coreos-config"
@@ -33,21 +39,37 @@ def call(params = [:]) {
             if (params['variant']) {
                 initArgs += " --variant ${params['variant']}"
             }
-            shwrap("cd ${cosaDir} && cosa init ${initArgs} ${params['srcConfig']}")
+            utils.cosaCmd(cosaDir: cosaDir, user: params['user'], args: "init ${initArgs} ${params['srcConfig']}")
         }
 
         if (params['make']) {
-            shwrap("make && make install DESTDIR=${cosaDir}/overrides/rootfs")
+            cmd = "make && make install DESTDIR=${cosaDir}/overrides/rootfs"
+            if(!params['user']) {
+                unprivshwrap(params['user'], cmd)
+            } else {
+                shwrap(cmd)
+            }
         }
+
         if (params['makeDirs']) {
             params['makeDirs'].each{
-                shwrap("make -C ${it} && make -C ${it} install DESTDIR=${cosaDir}/overrides/rootfs")
+                cmd = "make -C ${it} && make -C ${it} install DESTDIR=${cosaDir}/overrides/rootfs"
+                if(!params['user']) {
+                    unprivshwrap(params['user'], cmd)
+                } else {
+                    shwrap(cmd)
+                }
             }
         }
 
         if (params['overlays']) {
             params['overlays'].each{
-                shwrap("rsync -av ${it}/ ${cosaDir}/overrides/rootfs")
+                cmd = "rsync -av ${it}/ ${cosaDir}/overrides/rootfs"
+                if(!params['user']) {
+                    unprivshwrap(params['user'], cmd)
+                } else {
+                    shwrap(cmd)
+                }
             }
         }
         if (!params['noStrict']) {
@@ -58,9 +80,9 @@ def call(params = [:]) {
             extraArgs = "--force ${extraArgs}"
         }
 
-        shwrap("cd ${cosaDir} && cosa fetch ${extraFetchArgs}")
-        shwrap("cd ${cosaDir} && cosa build ${extraArgs}")
-        shwrap("cd ${cosaDir} && cosa osbuild qemu")
+        utils.cosaCmd(cosaDir: cosaDir, user: params['user'], args: "fetch ${extraFetchArgs}")
+        utils.cosaCmd(cosaDir: cosaDir, user: params['user'], args: "build ${extraArgs}")
+        utils.cosaCmd(cosaDir: cosaDir, user: params['user'], args: "osbuild qemu")
     }
 
     if (!params['skipKola']) {

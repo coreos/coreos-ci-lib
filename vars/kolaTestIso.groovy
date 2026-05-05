@@ -11,6 +11,11 @@ def call(params = [:]) {
     def extraArgs = params.get('extraArgs', "");
     def marker = params.get('marker', "");
 
+    // Check if kola has testiso command, skip if not available
+    if (shwrapRc("cosa kola help | grep -q testiso") != 0) {
+        echo "Skipping kola testiso: command not available in this version of kola"
+        return
+    }
 
     if (params['skipUEFI']) {
         extraArgs += " --denylist-test *.uefi*"

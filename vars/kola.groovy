@@ -109,6 +109,11 @@ def call(params = [:]) {
             args += " --tag=!${tag}"
         }
 
+        // add insecure flag for iso tests
+        if (shwrapRc("cosa kola help | grep -q testiso") != 0) {
+            args += " --inst-insecure"
+        }
+
         if (platformArgs != "" || extraArgs != "") {
             // There are two cases where we land here:
             //   1. The user passed `platformArgs`, which implies we're

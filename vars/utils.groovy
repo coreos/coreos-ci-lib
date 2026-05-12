@@ -83,3 +83,12 @@ def syncCredentialsIfInRemoteSession(envvars) {
         """)
     }
 }
+
+def isTestisoSupported() {
+    try {
+        return shwrapCapture("cosa kola help").contains("testiso")
+    } catch (Exception e) {
+        echo("Exception occurred while checking testiso support: ${e.getMessage()}")
+        return false
+    }
+}

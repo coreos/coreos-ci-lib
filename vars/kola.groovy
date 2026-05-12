@@ -109,8 +109,8 @@ def call(params = [:]) {
             args += " --tag=!${tag}"
         }
 
-        // add insecure flag for iso tests
-        if (shwrapRc("cosa kola help | grep -q testiso") != 0) {
+        if (!utils.isTestisoSupported()) {
+            echo "Adding --inst-insecure for live tests since kola doesn't support the testiso command"
             args += " --inst-insecure"
         }
 

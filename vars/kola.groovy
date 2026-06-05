@@ -149,15 +149,32 @@ def call(params = [:]) {
                     runKola(id, 'run', "--basic-qemu-scenarios ${skipSecureBootArg}")
                 }
             }
-            // normal run (without reprovision tests because those require a lot of memory)
-            id = marker == "" ? "kola" : "kola-${marker}"
-            ids += id
-            runKola(id, 'run', "--tag='!reprovision' ${args} --parallel=${parallel}")
 
-            // re-provision tests (not run with --parallel argument to kola)
-            id = marker == "" ? "kola-reprovision" : "kola-reprovision-${marker}"
-            ids += id
-            runKola(id, 'run', "--tag='reprovision' ${args}")
+            // Historically we ran some tests in parallel and other "heavy" tests serially.
+            // This was done based one the 'reprovision' tag. Let's detect if there are tests
+            // with the 'reprovision' tag and do that if needed.
+            def reprovision_tests = shwrapCapture("""
+                cd ${cosaDir}
+                cosa shell -- kola list --json |
+                jq -r '.[] | select(.Tags != null and (.Tags | index("reprovision"))) | .Name'
+            """)
+
+            if (reprovision_tests == "") {
+                // execute all the tests in a single run
+                id = marker == "" ? "kola" : "kola-${marker}"
+                ids += id
+                runKola(id, 'run', "${args} --parallel=${parallel}")
+            } else {
+                // normal run (without reprovision tests because those require a lot of memory)
+                id = marker == "" ? "kola" : "kola-${marker}"
+                ids += id
+                runKola(id, 'run', "--tag='!reprovision' ${args} --parallel=${parallel}")
+
+                // re-provision tests (not run with --parallel argument to kola)
+                id = marker == "" ? "kola-reprovision" : "kola-reprovision-${marker}"
+                ids += id
+                runKola(id, 'run', "--tag='reprovision' ${args}")
+            }
         }
     }
 
